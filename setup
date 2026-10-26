@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -e
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+SKILLS_SRC="$REPO_DIR/skills"
+PARENT_DIR="$(dirname "$REPO_DIR")"
+
+# Remove stale symlinks
+STALE_LINKS=("face")
+for old in "${STALE_LINKS[@]}"; do
+  if [ -L "$PARENT_DIR/$old" ]; then
+    rm "$PARENT_DIR/$old"
+    echo "Removed stale /$old symlink"
+  fi
+done
+
+for dir in "$SKILLS_SRC"/*/; do
+  [ -f "$dir/SKILL.md" ] || continue
+  name="$(basename "$dir")"
+  ln -sfn "$dir" "$PARENT_DIR/$name"
+  echo "Linked /$name"
+done
+
+echo "Done. Available skills: /faces, /facemake, /facechat, /faceteam, /manyface"
