@@ -210,7 +210,8 @@ faces style:status      [JOB_ID]  [--face ALIAS]  [--limit N]  [--wait]  [--time
 faces style:versions    <alias>                        # the styles built, per medium, and which is in use
 faces style:revert      <alias>  [--medium MEDIUM]  --yes   # back to the previous version of one medium's style (a toggle)
 faces style:delete      <alias>  [--medium MEDIUM | --all]  [--yes]
-                                                       # forget a built style. Never deletes source material.
+                                                       # delete a style build. Sources, and what the face learned
+                                                       # from them, are kept.
 
 faces catalog:doctor      [--fix]  [--generate]
 faces catalog:list
@@ -1003,17 +1004,19 @@ faces style:versions alice
 # email   1        yes     -           gpt-5.6-terra  2026-08-27 20:23:26
 
 faces style:revert alice --medium essay --yes   # back to the previous version: a toggle
-faces style:delete alice --medium email --yes   # forget one medium's style
-faces style:delete alice --all --yes            # forget every style
+faces style:delete alice --medium email --yes   # delete one medium's style build
+faces style:delete alice --all --yes            # delete every style build
 ```
 
 - `style:revert` toggles between the two versions kept for a medium; name the medium once the
   face has more than one style. A revert with no earlier version is a `409`, a normal answer. A
   build after a revert keeps the version you reverted to as its previous one.
 - An unscoped `style:delete` on a face with more than one style is **refused**, naming them.
-  Deleting a style never deletes documents, threads or uploaded material, so it can be built
-  again without uploading. To withdraw a **source** from a face while keeping it, use
-  `compile:doc:reset` / `compile:thread:reset`.
+  Deleting a style build never deletes documents, threads or uploaded material, so it can be
+  built again without uploading. What the face learned about how it writes from its documents
+  and threads stays too, until they are deleted. **To remove a style completely**, delete that
+  medium's documents and threads, then the build. To withdraw a **source** from a face while
+  keeping it, use `compile:doc:reset` / `compile:thread:reset`.
 
 ### Automatic builds
 
