@@ -108,8 +108,9 @@ faces keys:create --name "other-machine" --no-save
 
 Restrictions, all optional:
 
-- `--face ALIAS`: only these faces (repeatable). A key limited to faces can chat with them and
-  read them, and nothing else: listing faces, compiling and every other command answer `403`
+- `--face ALIAS`: only these faces (repeatable). A key limited to faces can chat with them, get
+  their causes and decisions, open sessions with them, and read them, and nothing else: listing
+  faces, compiling and every other command answer `403`
 - `--model NAME`: only use these models (repeatable)
 - `--budget F`: a lifetime spend cap in USD; past it, requests answer `402`
 - `--expires-days N`: expiry, 1 to 36500 days. Fixed when the key is made: to change it,

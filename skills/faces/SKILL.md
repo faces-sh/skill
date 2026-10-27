@@ -683,7 +683,7 @@ with `faces config:set`.
 | `409 build_in_progress` | A style build for that face and medium is running. `faces style:status JOB_ID --wait`; do not start another |
 | `422 max_tokens_exhausted` | The model spent all of `--max-tokens` thinking before writing a reply. The tokens are billed. Retry once with a larger `--max-tokens`; not with the same one |
 | `403` naming a signed-in session | The command changes the account (plan, card, top-up, ChatGPT link, sharing, publishing, deleting a face) and only an API key is saved. `faces auth:login`, then retry |
-| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can only chat with them and read them. Use an unrestricted key or `faces auth:login` |
+| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can chat with them, get their causes and decisions, open sessions, and read them. Use an unrestricted key or `faces auth:login` |
 | `422 empty_composite` | The formula's result is empty. Show the message; use a formula whose result is not empty |
 | `503 oauth_incomplete` | ChatGPT stopped its reply partway, twice. Nothing was charged; retry |
 | `404` on a session or compaction | Unknown, expired, closed, or another face's. Nothing was charged. Open a new session |
