@@ -108,7 +108,9 @@ faces keys:create --name "other-machine" --no-save
 
 Restrictions, all optional:
 
-- `--face ALIAS`: only chat with these faces (repeatable)
+- `--face ALIAS`: only these faces (repeatable). A key limited to faces can chat with them, get
+  their causes and decisions, open sessions with them, and read them, and nothing else: listing
+  faces, compiling and every other command answer `403`
 - `--model NAME`: only use these models (repeatable)
 - `--budget F`: a lifetime spend cap in USD; past it, requests answer `402`
 - `--expires-days N`: expiry, 1 to 36500 days. Fixed when the key is made: to change it,
@@ -165,8 +167,13 @@ Only the human can complete a checkout. See [BILLING.md](BILLING.md).
 | Command group | Needs |
 |---|---|
 | `auth:login`, `auth:register` | neither: they create the JWT |
-| `auth:connect`, `auth:disconnect`, `auth:refresh`, `keys:*` | a JWT: run `faces auth:login` first |
+| `auth:connect`, `auth:disconnect`, `auth:connections`, `auth:refresh`, `keys:*` | a JWT: run `faces auth:login` first |
+| `face:publish`, `face:unpublish`, `face:share`, `face:unshare`, `face:delete` | a JWT |
+| `billing:topup`, `billing:card-setup`, `billing:card:default`, `billing:card:remove`, `billing:subscription:plan`, `billing:subscription:activate`, `billing:subscription:cancel` | a JWT |
 | everything else | a JWT or an API key |
+
+These change the account or who can use its faces, so the API refuses any API key there with a
+`403`. From 1.0.1 the CLI sends the saved login for them, even when a key is saved too.
 
 ## Credential storage
 

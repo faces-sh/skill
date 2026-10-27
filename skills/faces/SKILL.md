@@ -381,7 +381,7 @@ A face holds one style per medium, and version numbers count per medium:
 ```bash
 faces style:versions alias                      # REVERTABLE says whether revert will work
 faces style:revert alias --medium essay --yes   # a toggle: run it again to return
-faces style:delete alias --medium email --yes   # forget one medium's style; sources are kept
+faces style:delete alias --medium email --yes   # delete one medium's style build; sources are kept
 ```
 
 **Styles also build themselves.** Once a face has enough of its **own** writing in a medium
@@ -681,6 +681,9 @@ with `faces config:set`.
 | `402 insufficient_credit_for_style_build` | A style build charged to credits, and the balance cannot cover it. `estimated_usd` is the most it is expected to cost, `balance_usd` the balance. Nothing was started or charged. Top up (`faces billing:topup --amount <USD>`), or link ChatGPT on Connect or Pro |
 | `409 compile_already_started` | `--rush` on a compile that has already started. It carries on as it is; nothing was charged |
 | `409 build_in_progress` | A style build for that face and medium is running. `faces style:status JOB_ID --wait`; do not start another |
+| `422 max_tokens_exhausted` | The model spent all of `--max-tokens` thinking before writing a reply. The tokens are billed. Retry once with a larger `--max-tokens`; not with the same one |
+| `403` naming a signed-in session | The command changes the account (plan, card, top-up, ChatGPT link, sharing, publishing, deleting a face) and only an API key is saved. `faces auth:login`, then retry |
+| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can chat with them, get their causes and decisions, open sessions, and read them. Use an unrestricted key or `faces auth:login` |
 | `422 empty_composite` | The formula's result is empty. Show the message; use a formula whose result is not empty |
 | `503 oauth_incomplete` | ChatGPT stopped its reply partway, twice. Nothing was charged; retry |
 | `404` on a session or compaction | Unknown, expired, closed, or another face's. Nothing was charged. Open a new session |
