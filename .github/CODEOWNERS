@@ -1,2 +1,3 @@
 # Changes to what protects this repo need both partners.
 /.github/ @maestrouniverso
+# Test: a change here must wait for code-owner review.
