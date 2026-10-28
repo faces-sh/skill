@@ -91,7 +91,7 @@ faces chat:chat         <alias | owner:alias | "(a | b)">[@model]  -m MSG  [--ll
                                                        # --cause: supply this turn's cause yourself (needs a model).
                                                        # --style: apply the face's built style for that medium.
                                                        # --medium: say what the reply is (needs no build).
-                                                       # --session / --compaction: see "Sessions and compaction".
+                                                       # --session / --compaction: see "Conversations and compaction".
 faces chat:messages     <alias@model | owner:alias@model | model>  -m MSG  [--system]  [--max-tokens N]  [--no-stream]
                         [--style MEDIUM]  [--medium MEDIUM]  [--session ID]  [--compaction ID]  [--show-cause]  [--cause TEXT | --cause-file PATH]  [--oauth-only]
 faces chat:responses    <alias@model | owner:alias@model | model>  -m MSG  [--instructions]  [--max-tokens N]  [--temperature F]  [--no-stream]
@@ -113,7 +113,7 @@ faces causes           <alias | owner:alias | "(a | b)">  (-m MSG... | --file PA
                                                        # the cause alone (POST /v1/causes): no model answers, only
                                                        # the cause is charged. Questions need --state, one cause each.
 
-faces session:create    <alias | owner:alias | "(a | b)">        # a session is with a face alone, no @model
+faces session:create    <alias | owner:alias | "(a | b)">        # opens a conversation with a face alone, no @model
 faces session:get       <session_id>
 faces session:compact   <session_id>
 faces session:close     <session_id>  [--yes]
@@ -375,39 +375,84 @@ A face with **nothing compiled** still answers on a chat, from its name, profile
 attributes, with no cause and no cause charge. Its cause alone (`faces causes`, `--cause-only`, or `decide` with
 no questions) is a `409`.
 
-## Sessions and compaction
+## Conversations and compaction
 
-A **session** groups the turns of one conversation with one face. **Compacting** it returns a
-summary of the face's position over the session, in the face's own terms, under a
-`compaction_id`. Send that id on a later request with the same face, and its cause reads the
-summary in place of the history you no longer send.
+A **conversation** keeps the whole exchange on the server: every message, each face's reply with
+its `cause` and the model that wrote it, every decision, and every **premise** (a named fact you
+declare). A turn sends only the new message; the history is put in front of it, and a face's
+earlier words are never taken from the request. It follows OpenAI's Conversations API
+(`/v1/conversations`, entries are items in the Responses item format). Its old name, session,
+still works: `/v1/sessions`, the `session` field, and the CLI's `session:*` commands and
+`--session`. **Compacting** returns a summary of one face's position over the conversation, in
+the face's own terms, under a `compaction_id`. Send that id on a later request with the same
+face, and its cause reads the summary in place of the history.
 
 ```bash
 faces session:create alice                       # a face alone (or owner:alias, or a composite), no @model
 # {"object": "session", "id": "fs_...", "model": "alice", "turns": 0, "status": "open", ...}
 
-faces chat:chat alice -m "Should I take the offer?" --session fs_...      # each turn joins the session
-faces decide alice --state "..." --question "..." --session fs_...
+faces chat:chat alice -m "Should I take the offer?" --session fs_...      # send only the new message
+faces decide alice --state "..." --question "..." --session fs_...       # reads the conversation too
 
 faces session:compact fs_...                     # {"compaction_id": "fcmp_...", "cause": "...", "turns": 8, ...}
 faces chat:chat alice -m "So what do I tell them tomorrow?" --compaction fcmp_...
 
 faces causes alice -m "And now?" --compaction fcmp_...          # the cause alone, reading the summary
 faces session:get fs_...                         # turns and last use, up to date
-faces session:close fs_... --yes                 # takes no more turns; its compactions stay usable
+faces session:close fs_... --yes                 # takes no more turns, cannot be read; its compactions stay usable
 ```
 
 - `--session` and `--compaction` work on every `chat:*` command, `faces causes` and
-  `faces decide`, and together: the turn joins the session and reads the compaction. With `--compaction`, send only
-  the messages you still want read.
-- A session belongs to the account that opened it and to its face; another face cannot use it.
-- **Cost:** opening, reading and closing are free, and a turn costs what it costs without a
-  session. Compacting is billed at the cause rate on the tokens it reads and writes (on Connect
-  and Pro, against the cause allowance). Using a compaction adds its text to what the cause
-  reads. A compaction that fails is not charged.
-- **Expiry:** a session expires 30 days after its last turn; a compaction 30 days after it is
-  written. An expired one answers `404`, as one that does not exist, and nothing is charged.
-- Compacting a session with no turns is a `422`. A compaction is held open like a cause, so
+  `faces decide`, and together: the turn joins the conversation and reads the compaction. With
+  `--compaction`, send only the messages you still want read.
+- Not with `chat:thread`: a thread resends its local transcript, which the conversation already
+  holds, so earlier messages are stored twice. Use `chat:chat --session` instead.
+- `system` and `developer` instructions apply to their request only and are not kept.
+- A conversation belongs to the account that opened it. Opened with a face, another face cannot
+  use it (`404`).
+
+**Premises.** A premise is a fact your decisions depend on: a `key` (1 to 64 letters, digits,
+`_` or `-`), a `value` (any JSON) and a plain `description`, required the first time a key is
+used and kept after. A newer value replaces it from that point on. Every decision is stored with
+the premises in force when it was made. Add premises and your own messages over HTTP, at most 20
+items at a time (the CLI has no command for this):
+
+```bash
+curl -X POST https://api.faces.sh/v1/conversations/fs_.../items \
+  -H "Authorization: Bearer $FACES_API_KEY" -H "Content-Type: application/json" \
+  -d '{"premises": [{"key": "vendor_certified", "value": false}]}'
+# {"object": "list", "data": [...the new items...],
+#  "premises": {"vendor_certified": {"value": false, "description": "the vendor holds a SOC 2 report"}, ...},
+#  "decisions_made_under_old_values": [{"call_id": "dec_...", "question": {"id": "sign", ...},
+#    "choice": "yes", "face": "alice", "changed": {"vendor_certified": {"was": true, "now": false}}}]}
+```
+
+- `premises` is each key's current value. `decisions_made_under_old_values` lists every earlier
+  decision made while a key you just changed held a different value. Nothing is decided again:
+  your agent chooses which to revisit (ask again with `decide --session`).
+- A turn can carry premises too: add `"premises": [...]` beside `"conversation": "fs_..."` on
+  `/v1/chat/completions`, `/v1/responses`, `/v1/messages`, `/v1/decisions`, `/v1/systemone` or
+  `/v1/causes`. Without `conversation` that is a `422`.
+- Only your own messages (`role: user`) and premises can be added; a face's replies and
+  decisions are written by the turns that produce them (`422` otherwise).
+- `GET /v1/conversations/fs_.../items` returns every item in order, as `data`, with the current
+  `premises`.
+
+**Several faces.** Over HTTP, `POST /v1/conversations` with `{}` (no `model`) opens a
+conversation any of your faces can join, each turn naming its face. Each face reads the others'
+replies labelled with their names, and their causes unless `"causes_visible": false` (on the
+conversation or the turn). Compacting it needs the face: `{"model": "alice"}` on
+`POST /v1/conversations/fs_.../compact` (`422` without).
+
+- **Cost:** opening, reading, adding items and closing are free, and a turn costs what it costs
+  without a conversation. Compacting is billed at the cause rate on the tokens it reads and
+  writes (on Connect and Pro, against the cause allowance). Using a compaction adds its text to
+  what the cause reads. A compaction that fails is not charged. Opening, adding items and
+  compacting count against the per-minute rate limit.
+- **Expiry:** a conversation expires 30 days after its last use, and is deleted with everything
+  in it; a compaction 30 days after it is written. An expired one answers `404`, as one that
+  does not exist, and nothing is charged.
+- Compacting a conversation with no turns is a `422`. A compaction is held open like a cause, so
   allow at least 300 seconds.
 
 ## The `me` face
@@ -517,9 +562,9 @@ faces chat:thread --id t_abc123 --delete              # remove the local file
 - **Per-turn flags** apply to the turn they are sent with: `--max-tokens`, `--temperature`,
   `--no-stream`, `--style`, `--medium`, `--session`, `--compaction`, `--show-cause`, `--cause`
   and `--oauth-only`. A refused turn is not saved, so the same message can be sent again.
-- To keep long threads cheap, pair the thread with a session: open one with
-  `session:create`, pass `--session` on each turn, compact it, and continue with
-  `--compaction`.
+- To keep a conversation on the server instead, use `chat:chat --session`, not a thread: a
+  thread resends its transcript, which the conversation already holds. See "Conversations and
+  compaction".
 - **`--json`** returns `{thread_id, model, provider, assistant, turns}`; `--list` an array of
   `{id, face, model, turns, created_at, updated_at}`; `--show` the stored thread.
 
@@ -654,9 +699,11 @@ At most **10 questions with a face**, 32 with `--baseline`. A noul's `criteria` 
 - **The cause** comes back whenever a face is named: `causes` holds one per question, and
   `cause` is the first question's. `--show-cause` prints them to stderr. Name a face and ask
   **no questions** for its cause alone.
-- **`--session` / `--compaction`** attach the decision to a session, as on chat.
-- **History:** decisions keep none between requests. To chain them, put the earlier situations
-  and what was decided into the state; do not replay earlier causes into it.
+- **`--session` / `--compaction`** attach the decision to a conversation, as on chat: it reads
+  the conversation so far and is stored with the premises in force.
+- **History:** outside a conversation, decisions keep none between requests. To chain them, put
+  the earlier situations and what was decided into the state; do not replay earlier causes into
+  it.
 
 With `--json` (systemone) the result is `{"model", "answers", "usage", "cause", "causes"}`,
 `answers` keyed by question id (`--id` renames the default `answer`), and `model` with the

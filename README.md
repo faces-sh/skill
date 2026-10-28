@@ -272,7 +272,7 @@ Claude: [reads the skill, decomposes into 5 steps]
 | `/facechat` | **Chat with any face or team.** `/facechat einstein` to chat with a face, `/facechat review-panel` to run a team's protocol, or `/facechat` to browse your catalog and pick. Supports model override. |
 | `/faceteam` | **Team composition.** Composes faces into a team with a self-sufficient mermaid protocol diagram. Three shapes: `(face)` rounded rects get called, `[instruction]` sharp rects the agent executes, `{condition}` diamonds the agent branches on. Produces a TEAM.md in `~/.faces/teams/`. |
 | `/manyface` | **Skill orchestrator.** Takes an existing skill (or designs one from scratch), decomposes it into steps, determines which need a solo face vs. a team vs. no face, and outputs a `manyfaced-` skill directory. |
-| `/faces` | **Core CLI.** Direct access to the faces platform: create faces, compile documents, import YouTube videos, build styles, chat, get causes, ask for decisions, run sessions, compare faces, compose them with set algebra, benchmark, manage API keys, billing, account preferences, and backup/restore. |
+| `/faces` | **Core CLI.** Direct access to the faces platform: create faces, compile documents, import YouTube videos, build styles, chat, get causes, ask for decisions, keep conversations on the server, compare faces, compose them with set algebra, benchmark, manage API keys, billing, account preferences, and backup/restore. |
 
 ## The hierarchy
 

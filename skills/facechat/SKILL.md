@@ -175,11 +175,13 @@ question (the principal *why* behind its response) with
 
 ### Long conversations
 
-For a long conversation, keep the cost of each turn down with a session: open
-one with `faces session:create ALIAS`, pass `--session SESSION_ID` on each turn,
-and when it grows, `faces session:compact SESSION_ID` and continue with
-`--compaction COMPACTION_ID`. See the `/faces` skill's REFERENCE.md, "Sessions
-and compaction".
+For a long conversation, keep it on the server instead of a thread: open one
+with `faces session:create ALIAS` (a conversation; session is its old name),
+send each new message with `faces chat:chat ALIAS -m "MESSAGE" --session ID`,
+and when it grows, `faces session:compact ID` and continue with
+`--compaction COMPACTION_ID`. Do not add `--session` to `chat:thread`: the
+thread resends its transcript, which the conversation already holds. See the
+`/faces` skill's REFERENCE.md, "Conversations and compaction".
 
 ## Team Chat
 
