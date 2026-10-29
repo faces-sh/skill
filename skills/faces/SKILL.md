@@ -492,10 +492,12 @@ which the conversation already holds, so earlier messages are stored twice. `cha
 the local alternative, resumed by `--id`
 ([REFERENCE.md](references/REFERENCE.md#multi-turn-threads-chatthread)).
 
-**Premises.** Declare the facts your decisions depend on over HTTP (free; the CLI has no
-command for it): `POST /v1/conversations/{id}/items` with
-`{"premises": [{"key": "budget_usd", "value": 50000, "description": "the most we can spend this year"}]}`,
-the description required the first time a key is used. Each decision is stored with the
+**Premises.** Declare the facts your decisions depend on (free):
+`faces conversation:add fs_... --premise budget_usd=50000 --premise-description budget_usd="the most we can spend this year"`,
+or `--premise` on `chat:chat`, `decide` and `causes` with `--conversation`, or over HTTP with
+`POST /v1/conversations/{id}/items` and
+`{"premises": [{"key": "budget_usd", "value": 50000, "description": "the most we can spend this year"}]}`.
+The description is required the first time a key is used. Each decision is stored with the
 premises in force when it was made. When you change a value, the response's
 `decisions_made_under_old_values` lists every earlier decision made under the old one, with
 `changed: {key: {was, now}}`. Nothing is decided again for you: revisit the ones that matter.
