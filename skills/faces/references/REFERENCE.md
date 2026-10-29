@@ -383,7 +383,9 @@ declare). A turn sends only the new message; the history is put in front of it, 
 earlier words are never taken from the request. It follows OpenAI's Conversations API
 (`/v1/conversations`, entries are items in the Responses item format). Its old name, session,
 still works: `/v1/sessions`, the `session` field, and the CLI's `session:*` commands and
-`--session`. **Compacting** returns a summary of one face's position over the conversation, in
+`--session`. When you send `tools` with a turn, the face's tool calls and the results you send
+back are kept too: on the next turn send only the result, since the conversation already holds
+the call it answers. **Compacting** returns a summary of one face's position over the conversation, in
 the face's own terms, under a `compaction_id`. Send that id on a later request with the same
 face, and its cause reads the summary in place of the history.
 
