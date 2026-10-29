@@ -414,8 +414,16 @@ faces session:close fs_... --yes                 # takes no more turns, cannot b
 **Premises.** A premise is a fact your decisions depend on: a `key` (1 to 64 letters, digits,
 `_` or `-`), a `value` (any JSON) and a plain `description`, required the first time a key is
 used and kept after. A newer value replaces it from that point on. Every decision is stored with
-the premises in force when it was made. Add premises and your own messages over HTTP, at most 20
-items at a time (the CLI has no command for this):
+the premises in force when it was made. Add premises and your own messages with `faces conversation:add`, at most 20 items at a time:
+
+```bash
+faces conversation:add fs_... --premise budget_usd=50000 \
+  --premise-description budget_usd="the most we can spend this year"
+faces conversation:add fs_... --premise budget_usd=20000 -m "The budget was cut."
+```
+
+`--premise key=value` reads the value as JSON when it is JSON and as text otherwise. The same
+over HTTP:
 
 ```bash
 curl -X POST https://api.faces.sh/v1/conversations/fs_.../items \
@@ -429,8 +437,9 @@ curl -X POST https://api.faces.sh/v1/conversations/fs_.../items \
 
 - `premises` is each key's current value. `decisions_made_under_old_values` lists every earlier
   decision made while a key you just changed held a different value. Nothing is decided again:
-  your agent chooses which to revisit (ask again with `decide --session`).
-- A turn can carry premises too: add `"premises": [...]` beside `"conversation": "fs_..."` on
+  your agent chooses which to revisit (ask again with `decide --conversation`).
+- A turn can carry premises too: `--premise` on `chat:chat`, `decide` and `causes` with
+  `--conversation`, or over HTTP `"premises": [...]` beside `"conversation": "fs_..."` on
   `/v1/chat/completions`, `/v1/responses`, `/v1/messages`, `/v1/decisions`, `/v1/systemone` or
   `/v1/causes`. Without `conversation` that is a `422`.
 - Only your own messages (`role: user`) and premises can be added; a face's replies and
