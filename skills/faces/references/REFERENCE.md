@@ -446,8 +446,13 @@ curl -X POST https://api.faces.sh/v1/conversations/fs_.../items \
   `/v1/causes`. Without `conversation` that is a `422`.
 - Only your own messages (`role: user`) and premises can be added; a face's replies and
   decisions are written by the turns that produce them (`422` otherwise).
-- `GET /v1/conversations/fs_.../items` returns every item in order, as `data`, with the current
-  `premises`.
+- `GET /v1/conversations/fs_.../items` lists the items a page at a time, like OpenAI's list
+  of conversation items: `limit` (1 to 100, default 20), `order` (`desc`, newest first, the
+  default, or `asc`), and `after` (an item id; pass the page's `last_id` for the next page
+  while `has_more` is true). Each page carries the current `premises`. `format=openai` returns
+  only OpenAI's item types and fields (no face name, model, cause or premises; a decision
+  becomes a `decision` tool call and its result). `faces conversation:items` reads every page
+  for you, oldest first.
 
 **Several faces.** Over HTTP, `POST /v1/conversations` with `{}` (no `model`) opens a
 conversation any of your faces can join, each turn naming its face. Each face reads the others'
