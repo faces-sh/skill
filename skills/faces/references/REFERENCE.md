@@ -368,8 +368,11 @@ each assistant turn back exactly as it was returned, cause included. `chat:threa
 for you. A cause reads the message it answers and up to the four turns before it, within 30,000
 tokens; earlier turns are not read and not billed.
 
-**Limits on a face:** at most 30,000 tokens per message and 62,000 per request, on all three
-chat endpoints. Over either is a `422` naming the size, before any work.
+**Limits on a face:** at most 30,000 tokens per message, on all three chat endpoints. Per
+request, `face@model` takes up to the model's own input limit less what the face adds
+(`max_request_tokens_with_face` on GET /v1/models); a model with no listed limit, a face alone,
+and a formula on `/v1/responses` or `/v1/messages` take 62,000. Over any limit is a `422`
+naming the size, before any work.
 
 A face with **nothing compiled** still answers on a chat, from its name, profile addendum and
 attributes, with no cause and no cause charge. Its cause alone (`faces causes`, `--cause-only`, or `decide` with
