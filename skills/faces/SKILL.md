@@ -462,6 +462,7 @@ Refusals of a face chat end "Nothing was charged.":
 | `422` | No message in the conversation for the face to answer | Fix the request; do not retry |
 | `503` | The cause failed | Retry |
 | `503` | The model failed or is unavailable (`retryable` says whether to ask again) | Retry when `retryable` is true; when false, use another model |
+| `503` | Not streamed: the model did not finish its reply within 300 seconds | Ask for a shorter reply, or stream (the default) |
 | `504` | The face did not finish within 300 seconds | Retry |
 
 A refusal can also arrive **inside** a stream that already started `200`: the CLI prints it and
