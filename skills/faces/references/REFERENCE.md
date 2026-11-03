@@ -365,14 +365,18 @@ present the cause as what the face said.
 
 **Keep causes in the transcript.** When you build a transcript yourself against the API, send
 each assistant turn back exactly as it was returned, cause included. `chat:thread` does this
-for you. A cause reads the message it answers and up to the four turns before it, within 30,000
-tokens; earlier turns are not read and not billed.
+for you. On chat, a cause reads the message it answers and up to the four turns before it,
+within 30,000 tokens; earlier turns are not read and not billed. `faces causes` with `-m`
+(`POST /v1/causes` with `messages`) reads every message sent, and takes at most 30,000 tokens
+per request.
 
 **Limits on a face:** at most 30,000 tokens per message, on all three chat endpoints. Per
-request, `face@model` takes up to the model's own input limit less what the face adds
+request, `face@model` takes up to the model's own input limit less 4,500, the most a face adds
 (`max_request_tokens_with_face` on GET /v1/models); a model with no listed limit, a face alone,
 and a formula on `/v1/responses` or `/v1/messages` take 62,000. Over any limit is a `422`
-naming the size, before any work.
+naming the size, before any work. `--style` adds up to about 4,000 tokens more that the limit
+does not reserve, so leave room for it; a request that runs past the model's own limit gets the
+model's own length error.
 
 A face with **nothing compiled** still answers on a chat, from its name, profile addendum and
 attributes, with no cause and no cause charge. Its cause alone (`faces causes`, `--cause-only`, or `decide` with
@@ -620,6 +624,7 @@ before the model is called, and nothing is charged.
 | `422` | No message in the conversation for the face to answer | Fix the request. Do not retry |
 | `503` | The cause failed | Retry |
 | `503` | The model failed or is unavailable (`retryable` says whether to ask again) | Retry when `retryable` is true; when false, use another model |
+| `503` | Not streamed: the model did not finish its reply within 300 seconds | Ask for a shorter reply, or stream |
 | `504` | The face did not finish within 300 seconds | Retry |
 
 ## OAuth-only mode (`--oauth-only`): Connect and Pro

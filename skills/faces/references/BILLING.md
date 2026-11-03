@@ -27,8 +27,8 @@ user still needs credit for most chats, and always for `faces decide`.
 - **Compile** counts a source's tokens **each time** it is compiled; a recompile counts again.
 - **A cause** counts the tokens it read plus 1,500. A cause reads the message it answers and up
   to the four turns before it, within 30,000 tokens; on Connect and Pro a chat with `@model`
-  reads within 10,000. A face alone, `/v1/causes` and decisions read within 30,000 on every
-  plan.
+  reads within 10,000. A face alone and decisions read within 30,000 on every plan;
+  `/v1/causes` with messages reads every message sent, at most 30,000 tokens per request.
 - The month is the subscription's 30-day window, weeks are 7-day blocks of it, and the 5-hour
   window rolls.
 
