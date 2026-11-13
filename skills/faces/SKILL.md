@@ -475,13 +475,15 @@ its `200` body, so check for it before reading the answer. A hand-written SSE re
 starting with `:` (keep-alives) and treat an error event as a failure. See
 [REFERENCE.md → Streaming](references/REFERENCE.md#streaming-face-chats).
 
-**Conversations.** `chat:chat` is a single turn. A **conversation** keeps the whole exchange on
-the server: every message, each reply with its cause, every decision, and every **premise** (a
-named fact you declare). Each turn sends only the new message; the face reads the rest. Its
-old name is session: the CLI opens one with `session:create` and joins it with `--session`.
+**States.** `chat:chat` is a single turn. A **state** is something your agent builds and Faces
+keeps and watches: your **premises** (named facts you declare), the decisions faces made, each
+reply with its cause, and your messages, each decision kept with the premises it was made under.
+Each turn sends only the new message; the face reads the rest. Over HTTP it is `/v1/states`
+(`/v1/conversations` is a deprecated alias), joined with the `conversation` field. The CLI opens
+one with `session:create` and joins it with `--session` (old names that still work).
 
 ```bash
-faces session:create alias                               # prints the conversation id (fs_...)
+faces session:create alias                               # prints the state id (fs_...)
 faces chat:chat alias -m "…" --session fs_...            # send only the new message
 faces session:compact fs_...                             # prints a compaction id (fcmp_...)
 faces chat:chat alias -m "…" --compaction fcmp_...       # reads the summary instead of the history
@@ -489,23 +491,23 @@ faces chat:chat alias -m "…" --compaction fcmp_...       # reads the summary i
 
 `--session` and `--compaction` work on every `chat:*` command, `faces causes` and
 `faces decide`. Do not add `--session` to `chat:thread`: a thread resends its local transcript,
-which the conversation already holds, so earlier messages are stored twice. `chat:thread` is
+which the state already holds, so earlier messages are stored twice. `chat:thread` is
 the local alternative, resumed by `--id`
 ([REFERENCE.md](references/REFERENCE.md#multi-turn-threads-chatthread)).
 
 **Premises.** Declare the facts your decisions depend on (free):
 `faces conversation:add fs_... --premise budget_usd=50000 --premise-description budget_usd="the most we can spend this year"`,
 or `--premise` on `chat:chat`, `decide` and `causes` with `--conversation`, or over HTTP with
-`POST /v1/conversations/{id}/items` and
+`POST /v1/states/{id}/items` and
 `{"premises": [{"key": "budget_usd", "value": 50000, "description": "the most we can spend this year"}]}`.
 The description is required the first time a key is used. Each decision is stored with the
 premises in force when it was made. When you change a value, the response's
 `decisions_made_under_old_values` lists every earlier decision made under the old one, with
 `changed: {key: {was, now}}`. Nothing is decided again for you: revisit the ones that matter.
 
-Turns cost what they cost without a conversation; opening, reading and adding items are free;
-compacting is billed at the cause rate. A conversation expires 30 days after its last use. See
-[REFERENCE.md → Conversations](references/REFERENCE.md#conversations-and-compaction).
+Turns cost what they cost without a state; opening, reading and adding items are free;
+compacting is billed at the cause rate. A state expires 30 days after its last use. See
+[REFERENCE.md → States](references/REFERENCE.md#states-and-compaction).
 
 **System and published faces:** every account can chat with a curated set of faces under the
 `head` account, and with any face published or shared with it, as `owner:alias@model`, for
@@ -695,10 +697,10 @@ with `faces config:set`.
 | `409 build_in_progress` | A style build for that face and medium is running. `faces style:status JOB_ID --wait`; do not start another |
 | `422 max_tokens_exhausted` | The model spent all of `--max-tokens` thinking before writing a reply. The tokens are billed. Retry once with a larger `--max-tokens`; not with the same one |
 | `403` naming a signed-in session | The command changes the account (plan, card, top-up, ChatGPT link, sharing, publishing, deleting a face) and only an API key is saved. `faces auth:login`, then retry |
-| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can chat with them, get their causes and decisions, open conversations, and read them. Use an unrestricted key or `faces auth:login` |
+| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can chat with them, get their causes and decisions, open states, and read them. Use an unrestricted key or `faces auth:login` |
 | `422 empty_composite` | The formula's result is empty. Show the message; use a formula whose result is not empty |
 | `503 oauth_incomplete` | ChatGPT stopped its reply partway, twice. Nothing was charged; retry |
-| `404` on a conversation (session) or compaction | Unknown, expired, closed, another account's, or opened with another face. Nothing was charged. Open a new conversation |
+| `404` on a state (conversation, session) or compaction | Unknown, expired, closed, another account's, or opened with another face. Nothing was charged. Open a new state |
 | `422` on a thread import | Retry with `--type document` |
 | `409` read-only on edit | The content is read-only. Do not retry; say so. It can still be read or deleted, and `compile:thread:edit --label/--medium/--clear-medium` still work |
 | A compile you want to stop | `compile:thread:pause ID` or `compile:doc:pause ID`, then wait for `status: "paused"` (the CLI waits unless `--no-wait`). Resume with `compile:*:make ID`, or `compile:*:reset ID` to withdraw it from the face while keeping the source |
