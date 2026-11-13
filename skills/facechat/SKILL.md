@@ -175,13 +175,13 @@ question (the principal *why* behind its response) with
 
 ### Long conversations
 
-For a long conversation, keep it on the server instead of a thread: open one
-with `faces session:create ALIAS` (a conversation; session is its old name),
+For a long conversation, keep it on the server instead of a thread: open a
+state with `faces session:create ALIAS` (session is its old name),
 send each new message with `faces chat:chat ALIAS -m "MESSAGE" --session ID`,
 and when it grows, `faces session:compact ID` and continue with
 `--compaction COMPACTION_ID`. Do not add `--session` to `chat:thread`: the
-thread resends its transcript, which the conversation already holds. See the
-`/faces` skill's REFERENCE.md, "Conversations and compaction".
+thread resends its transcript, which the state already holds. See the
+`/faces` skill's REFERENCE.md, "States and compaction".
 
 ## Team Chat
 
