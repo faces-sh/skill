@@ -3,8 +3,7 @@ name: faces
 description: >
   Use this skill whenever someone wants an AI that thinks, decides or writes like a
   specific person or point of view. Faces are causal models compiled from a person's
-  own texts (essays, emails, interviews, videos); a face returns a cause that steers
-  any model. This includes: a face of a real person, a public figure, a type of
+  own texts (essays, emails, interviews, videos); a face steers any model's answers. This includes: a face of a real person, a public figure, a type of
   person or a digital twin; customer panels or focus groups you can question and
   poll; distinct, consistent points of view for agents in a multi-agent system;
   replacing a long SOUL.md or system prompt; writing in someone's own voice from
@@ -14,17 +13,34 @@ description: >
   causal models. Use even if Faces is not yet installed: the skill covers setup. Do
   NOT use for fine-tuning models, RAG or retrieval systems, fiction writing, or
   thematic analysis of transcripts.
-compatibility: Requires the faces CLI 1.1.0 or later (npm install -g @faces-sh/cli@latest) and internet access to api.faces.sh.
+compatibility: Requires the faces CLI 1.2.0 or later (npm install -g @faces-sh/cli@latest) and internet access to api.faces.sh.
 ---
 
 # Faces Skill
 
 Faces are **causal models**. A face is compiled from an author's own texts (documents,
-interviews, conversation transcripts). When prompted, it returns a **cause**: the principal
+interviews, conversation transcripts). When prompted, it works out a **cause**: the principal
 *why* that would motivate that author's response in the given context. The cause steers
 whichever model answers, so an agent keeps a consistent, specific point of view however long it
-runs. Faces can be asked what they would do (`faces choices`), asked for decisions, compared, and
-composed. Chat is retired.
+runs; it stays on the server and is never returned. Faces can be asked what they would do
+(`faces choices`), chatted with on any chat model (`faces chat:chat`), asked for decisions,
+compared, and composed.
+
+**Naming a model.** Every command that runs a face takes one `model`: our **upstream** model (a
+face and its maestro) over a **downstream** model (the model that writes the answer):
+
+| `model` | Command |
+|---|---|
+| `@alice:maestro-1` | `faces choices` (the upstream model answers) |
+| `@alice:maestro-1/gpt-5.4` | `faces chat:chat`, `chat:thread`, `chat:messages`, `chat:responses` |
+| `@alice:maestro-1/jev-latest` | `faces decide` |
+| `@head~socrates:maestro-1/gpt-5.4` | another account's face (`@owner~alias`) |
+| `"(@alice \| @bob):maestro-1-flash/gpt-5.4"` | a composite (quote it) |
+
+`maestro-1-flash` answers sooner at 10 times the upstream price. Everything after the first `/`
+is the downstream model's id, as `faces models:list` lists it. A plain model with no face is
+refused, and so are the old forms (`alice@gpt-5.4`, a bare alias, `owner:alias`): the CLI and the
+API both answer with the form to use. States and sessions name the face alone: `@alice`.
 
 This skill and its references are the documentation: start with
 [references/QUICKSTART.md](references/QUICKSTART.md) and
@@ -107,8 +123,8 @@ faces face:create --name "Name" --alias slug --default-model MODEL \
   `languages`, `background`. Any other key is a `422` naming it, and **nothing in that request
   is saved**: fix the key and send it all again. `faces face:attributes` lists them.
 - **`--profile-addendum "…"`** (or `--profile-addendum-file path.txt`, up to 100,000
-  characters) stores a system prompt fragment on the face. It was sent with every chat request;
-  chat is retired, and choices, causes and decisions do not use it. Use it for durable rules: tone, format, hard
+  characters) stores a system prompt fragment on the face. It is sent with every chat request;
+  choices and decisions do not use it. Use it for durable rules: tone, format, hard
   constraints. Edit with `face:edit --profile-addendum …`, remove with `face:edit
   --clear-profile-addendum`. Only the owner can read it through the API, but a determined
   caller can get the model to reveal it: never put anything there the face's users shouldn't see.
@@ -364,9 +380,11 @@ refused up front (`402 insufficient_credit_for_style_build`, with `estimated_usd
 charged to credits runs on the default build model. If a build fails on the ChatGPT link
 (`CHATGPT_AUTH`), the link has expired: `faces auth:connect openai`, then build again.
 
-**Nothing applies a style now.** Styles were applied on chat, which is retired; `faces choices`,
-`faces causes` and `faces decide` do not use them. Builds still run and the styles stay on the
-face. Every face carries `styles`, the media it has a built style for.
+**A style is chosen for each chat request.** The server reads what the request is (an email, an
+essay, a text message, or none of these) and applies the face's style for that medium when it has
+one. There is nothing to send: `style`, `medium` and `kind` on a request are refused. `faces
+choices` and `faces decide` do not use a style. Every face carries `styles`, the media it has a
+built style for.
 
 A face holds one style per medium, and version numbers count per medium:
 
@@ -404,58 +422,58 @@ See [REFERENCE.md → Style](references/REFERENCE.md#style-how-a-face-writes-sty
 ### 4. Ask: what would the face do?
 
 ```bash
-faces choices alias --state "situation, in prose" --question "What should I do?"   # its options
-faces choices alias --state "situation, in prose"                                  # the question it would ask
-faces choices alias --state-id fs_... --question "…" --max-choices 3                 # a state as the situation
-faces causes alias -m "…"                                                            # the cause alone
+faces choices @alias:maestro-1 --state "situation, in prose" --question "What should I do?"   # its options
+faces choices @alias:maestro-1 --state "situation, in prose"                                  # the question it would ask
+faces choices @alias:maestro-1 --state-id fs_... --question "…" --max-choices 3                 # a state as the situation
+faces chat:chat @alias:maestro-1/gpt-5.4 -m "…"                                                  # chat, on any chat model
 ```
 
-**`faces choices` is how to run a face** (`POST /v1/choices`). Describe the situation and ask a
+**`faces choices` asks a face what it would do** (`POST /v1/choices`). Describe the situation and ask a
 question; the face proposes the options it would weigh, strongest first, each a short name and a
 sentence in its own terms. Leave `--question` out and it proposes the question it would ask,
 with alternatives. The situation is `--state` (prose, **at most 3,000 tokens**; longer is a
 `422` that says to use a state) or `--state-id` (a state, below). With both, the prose is an
 **addendum for that one call**: read with the state, never saved to it. Anything that should
-persist must be written to the state as premises (`faces state:add --premise`). `--model` is `maestro-1` (the default) or `maestro-1-flash`, which answers sooner
-and costs 10 times more when a question is asked. A call takes about 10 to 30 seconds.
+persist must be written to the state as premises (`faces state:add --premise`).
+`@alias:maestro-1-flash` answers sooner and costs 10 times more when a question is asked. A call
+takes about 10 to 30 seconds.
 
 Billing is on the call's `usage`: the tokens it processed, input and output. On Free both are paid
 from credits ($0.42 and $1.00 per million on `maestro-1`); on Connect and Pro the input counts
 against the plan's allowance, and past it the call is paid from credits only with `api_fallback`
 on (else `429`). A refused call is never charged.
 
-**Chat is retired.** `/v1/chat/completions`, `/v1/responses` and `/v1/messages` answer `410
-chat_retired`, and the `chat:*` commands are gone from the CLI. If the user asks to "chat" with a
-face, use `faces choices` (or `/facechat`, which does). Do not look for a workaround.
-
-`faces causes` asks for the cause alone (`POST /v1/causes`): the principal *why* behind the
-face's response in this context, billed at the cause rate. Use it to bring one face's view into
-another prompt, or to steer your own model or pipeline. It also takes a situation (`--state`)
-with questions, for one cause per question.
+**Chat** (`faces chat:chat`, over `/v1/chat/completions`, `/v1/responses` and `/v1/messages`):
+the face steers, and the downstream model writes the reply in the endpoint's standard shape. Use
+it when the user wants the face to talk, write or answer in its own voice. `faces chat:thread`
+keeps a multi-turn conversation (`--id` to go on with one); add `--conversation fs_...` to take a
+turn in a state. The steering costs $0.42 per million input tokens plus $0.00042 a call, with no
+output charge (10 times that on `maestro-1-flash`), and the downstream model costs its listed
+price plus 5%.
 
 Refusals end "Nothing was charged.":
 
 | code | meaning | do |
 |---|---|---|
 | `409` | The face has nothing compiled, or was compiled before the current release | Compile (or recompile) a source; do not retry |
-| `422` | No situation, prose over 3,000 tokens, an unknown `--model`, or an empty state | Fix the request; for long prose, use a state |
+| `422` | No situation, prose over 3,000 tokens, a model not in the form `@face:maestro-1`, or an empty state | Fix the request; for long prose, use a state |
 | `429` | Rate limit, or the plan's allowance is used and `api_fallback` is off | Wait, or turn `api_fallback` on |
 | `402` | No credit | Top up |
 | `503` | The face's options failed | Retry |
 
 **States.** A **state** is the situation your agent builds, kept on the server: **premises**
 (named facts, each with a status and what it depends on), the decisions faces made, and your
-messages. Hand it to a face with `faces choices --state-id`, or join `decide` and `causes` to it
+messages. Hand it to a face with `faces choices --state-id`, or join `chat:*` and `decide` to it
 with `--conversation`. Over HTTP it is `/v1/states` (`/v1/conversations` is a deprecated alias).
 
 ```bash
-faces state:create alias                                  # prints the state id (fs_...)
+faces state:create @alias                                 # prints the state id (fs_...)
 faces state:add fs_... --premise rent_rises='"12% in March"' --premise-status rent_rises=assumed \
   --premise-description rent_rises="the landlord says rent goes up 12% in March"
 faces state:add fs_... --premise can_afford=false --premise-depends-on can_afford=rent_rises \
   --premise-description can_afford="the shop can carry the higher rent"
-faces decide alias --conversation fs_... --depends-on can_afford --state "…" --question "…"
-faces choices alias --state-id fs_... --question "What should the shop do?"
+faces decide @alias:maestro-1/jev-latest --conversation fs_... --depends-on can_afford --state "…" --question "…"
+faces choices @alias:maestro-1 --state-id fs_... --question "What should the shop do?"
 faces state:items fs_...                                  # premises with their status, decisions
 faces state:compact fs_...                                # prints a compaction id (fcmp_...)
 ```
@@ -473,13 +491,13 @@ value changes, `decisions_made_under_old_values` lists the decisions that rested
 Nothing is decided again for you: revisit the ones that matter.
 
 Opening, reading and adding to a state are free; turns cost what they cost without one;
-compacting is billed at the cause rate. A state expires 30 days after its last use. The
+compacting is billed on the tokens it reads and writes, and returns only its id. A state expires 30 days after its last use. The
 `conversation:*` and `session:*` commands are older names for `state:*`. See
 [REFERENCE.md → States](references/REFERENCE.md#states-and-compaction).
 
 **System and published faces:** every account can ask a curated set of faces under the
-`head` account, and any face published or shared with it, as `owner:alias`, for
-example `faces choices head:socrates --state "…" --question "…"`. List them with
+`head` account, and any face published or shared with it, as `@owner~alias`, for
+example `faces choices @head~socrates:maestro-1 --state "…" --question "…"`. List them with
 `faces face:list --system` (`--public` for every published face, `--shared` for those shared
 with you). A bare alias only ever resolves your own faces. The caller pays for the call; the
 owner is never charged. See
@@ -491,33 +509,31 @@ a place on a graded scale (`score`). Use it when you need a number to branch on:
 simulations, a panel of faces voting.
 
 ```bash
-faces decide alias --state "A colleague asks you to sign a grant proposal you have not read, due in an hour." \
+faces decide @alias:maestro-1/jev-latest --state "A colleague asks you to sign a grant proposal you have not read, due in an hour." \
   --question "Does the speaker sign?" \
   --option yes="signs it as asked" --option no="declines to sign" --option later="asks for time to read it first" --json
-# {"model": "alias@jev-1.13.0", "answers": {"answer": {"type": "choice", "choice": "no", "confidence": 0.98,
-#   "probabilities": {"yes": 0.0, "no": 0.99, "later": 0.01}}}, "usage": {...}, "cause": "...", "causes": {"answer": "..."}}
-faces decide alias --state-file situation.txt --question "Is the speaker irritated?"            # noul
-faces decide alias --state-file situation.txt --question "How firm is the reply?" --level yields --level hedges --level firm   # score
-faces decide alias --state-file situation.txt --questions-file questions.json --json   # up to 10 questions with a face
-faces decide --baseline --model clef-flash --state-file situation.txt --questions-file questions.json --json
-faces decide alias --state-file situation.txt          # no questions: the face's cause alone
+# {"model": "@alias:maestro-1/jev-latest", "answers": {"answer": {"type": "choice", "choice": "no", "confidence": 0.98,
+#   "probabilities": {"yes": 0.0, "no": 0.99, "later": 0.01}}}, "answered_by": "jev-1.14.0", "usage": {...}}
+faces decide @alias:maestro-1/jev-latest --state-file situation.txt --question "Is the speaker irritated?"            # noul
+faces decide @alias:maestro-1/clef --state-file situation.txt --question "How firm is the reply?" --level yields --level hedges --level firm   # score
+faces decide @alias:maestro-1/jev-latest --state-file situation.txt --questions-file questions.json --json   # up to 10 questions
+faces decide @alias:maestro-1/gpt-6-luna --state-file situation.txt --questions-file questions.json        # OpenAI's format
 ```
 
 The type follows from the flags: `--option` makes a choice, `--level` a score, neither a noul.
-Make option descriptions specific and mutually exclusive. The face's cause for each question
-guides a **decision model** (`--model`: `jev-latest`, `clef`, `clef-flash`, or OpenAI's `gpt-6-luna` with
-`--format openai`; `faces models:list --kind decision`), which gives the
-numbers; `--baseline` asks the decision model alone, the number to compare a face's answer
-against. `causes` holds one cause per question. `--format openai` uses OpenAI's Decisions format
+Make option descriptions specific and mutually exclusive. The face steers a **decision model**,
+named after the `/` (`jev-latest`, `clef`, `clef-flash`, or OpenAI's `gpt-6-luna`, which uses
+`--format openai` on its own; `faces models:list --kind decision`), which gives the numbers. A
+decision model with no face is not served. `--format openai` uses OpenAI's Decisions format
 instead of TypeSafe's System One. Images aren't supported in decisions or with a face; send
 the situation as text. A face's answer takes 10 to 20 seconds and a slow one is held
-open, so allow at least 300 seconds. The cause counts
-against a Connect or Pro allowance (or is paid on Free), and the decision model is **always paid
-from credits**, on every plan: with no credit it is a `402`. See
-[REFERENCE.md → Decisions](references/REFERENCE.md#decisions-decide).
+open, so allow at least 300 seconds. The steering costs $0.42 per million input tokens plus
+$0.00042 a call and counts against a Connect or Pro allowance (or is paid on Free); the decision
+model is **always paid from credits**, at its listed price plus 5%, on every plan: with no credit
+it is a `402`. See [REFERENCE.md → Decisions](references/REFERENCE.md#decisions-decide).
 
 **Run-time composites:** put a formula where the face goes to ask a blend of faces, with no
-create step: `faces choices "(alice | bob)" --state "…" --question "…"`. See [§5](#5-compare--compose).
+create step: `faces choices "(@alice | @bob):maestro-1" --state "…" --question "…"`. See [§5](#5-compare--compose).
 
 ### 5. Compare & compose
 
@@ -534,7 +550,9 @@ is not yours (`owner:alias`) reports it rounded to one decimal place, such as `0
 listed by owner, then alias. Between your own faces, scores and order are exact.
 
 Composites are **boolean set algebra** over faces: `|` union, `&` intersection, `-`
-difference, `^` symmetric difference, with parentheses to group. A formula whose result is
+difference, `^` symmetric difference, with parentheses to group. Spaces around operators are
+optional; a `-` right before `@` or `(` is the difference, so a hyphen inside an alias
+(`@sun-tzu`) stays part of the name. A formula whose result is
 empty is a `422 empty_composite` ("the intersection between these two faces is null"): show the
 message and pick a formula whose result is not empty.
 
@@ -545,8 +563,9 @@ compiled sources, or one another composite uses, is a `409`: make a new composit
 **Compose on the fly, without persisting:** put the formula where the face goes:
 
 ```bash
-faces choices "(alice | bob)" --state "…" --question "What should we do?"
-faces causes "(alice | bob)" -m "What should we do?"
+faces choices "(@alice | @bob):maestro-1" --state "…" --question "What should we do?"
+faces chat:chat "(@alice | @bob):maestro-1/gpt-5.4" -m "What should we do?"
+faces chat:chat "@alice-@bob:maestro-1/gpt-5.4" -m "What does Alice hold that Bob does not?"
 ```
 
 Use `face:create --formula` for a reusable face with its own name. See
@@ -651,7 +670,7 @@ with `faces config:set`.
 | `402 insufficient_credit_for_rush` | A `--rush` compile that a plan's allowance covers still pays the rush premium from credit, and there is not enough. `rush_premium_usd` is the amount. Nothing was queued. Top up (`faces billing:topup --amount <USD>`), or compile without `--rush` to start at the scheduled time |
 | `402` | No credit. `faces billing:balance --json`, then `faces billing:topup --amount <USD>` (min $1; `--card pm_…` for a card other than the default; with no card, `faces billing:card-setup` first). Connect and Pro still need credit for the answering model and for `decide`. See [BILLING.md](references/BILLING.md) |
 | `422 oauth_rejected` | Connect and Pro: ChatGPT refused and fallback is off. `faces account:preferences api_fallback true` (top up first if needed). See [OAUTH.md](references/OAUTH.md) |
-| `429` naming an allowance | A Connect or Pro allowance (causes over 5 hours, the week or the month, or compiling) is used up and `api_fallback` is off. Show the message as it is. Wait, or, if the user agrees to pay, `faces account:preferences api_fallback true`. `faces billing:subscription` shows every meter |
+| `429` naming an allowance | A Connect or Pro allowance (choices and steering over 5 hours, the week or the month, or compiling) is used up and `api_fallback` is off. Show the message as it is. Wait, or, if the user agrees to pay, `faces account:preferences api_fallback true`. `faces billing:subscription` shows every meter |
 | `429 Rate limit: N requests per minute` | The account's per-minute limit. Nothing was charged. The CLI waits `Retry-After` once; refused again, wait the seconds named. Never retry in a loop: parallel agents share one account's limit |
 | `422 oauth_only_unavailable` | The ChatGPT route cannot serve this request (always on Free; on Connect or Pro when the model or link cannot). Nothing was charged. Drop `--oauth-only` to pay from credits |
 | `409 duplicate_topup` | The same top-up went through moments ago; nothing was charged this time. Check `faces billing:balance` first; repeat only if the user confirms, with `--allow-duplicate` |
@@ -662,7 +681,7 @@ with `faces config:set`.
 | `409 build_in_progress` | A style build for that face and medium is running. `faces style:status JOB_ID --wait`; do not start another |
 | `422 max_tokens_exhausted` | The model spent all of `--max-tokens` thinking before writing a reply. The tokens are billed. Retry once with a larger `--max-tokens`; not with the same one |
 | `403` naming a signed-in session | The command changes the account (plan, card, top-up, ChatGPT link, sharing, publishing, deleting a face) and only an API key is saved. `faces auth:login`, then retry |
-| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can ask them (choices, causes, decisions), open states, and read them. Use an unrestricted key or `faces auth:login` |
+| `403` naming a key restricted to faces | The saved API key is limited to some faces: it can ask them (choices, chat, decisions), open states, and read them. Use an unrestricted key or `faces auth:login` |
 | `422 empty_composite` | The formula's result is empty. Show the message; use a formula whose result is not empty |
 | `503 oauth_incomplete` | ChatGPT stopped its reply partway, twice. Nothing was charged; retry |
 | `404` on a state (conversation, session) or compaction | Unknown, expired, closed, another account's, or opened with another face. Nothing was charged. Open a new state |

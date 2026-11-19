@@ -171,7 +171,8 @@ so a human can see the pattern at a glance.
 **Diagram convention: three shapes, one rule each:**
 
 - `(alias)` **rounded rectangle** = a face gets asked via
-  `faces choices alias --state "..." --question "..."` (`owner:alias` for a face you do not own). The
+  `faces chat:chat @alias:maestro-1/MODEL -m "..."`, or `faces choices @alias:maestro-1 --state "..."
+  --question "..."` for its options (`@owner~alias` for a face you do not own). The
   alias must appear in the frontmatter `members:` list.
 - `[text]` **sharp rectangle** = the orchestrating agent executes this step
   itself. The text inside IS the instruction: make it specific enough that

@@ -1,12 +1,13 @@
 ---
 name: facechat
 description: >
-  Ask any face in your catalog what it would do. Invoke as /facechat <alias> <message>
-  (e.g. /facechat socrates Should I take the job?), /facechat <alias> to start, or
-  /facechat with no argument to browse your catalog and pick a face. The face proposes
-  the options it would weigh, or the question it would ask. Trigger when the user says
-  "chat with a face", "talk to <name>", "ask <name>", or wants a compiled face's view.
-  Also trigger on /facechat.
+  Chat with any face in your catalog. Invoke as /facechat <alias> <message>
+  (e.g. /facechat socrates How are you?) to send a message directly, /facechat <alias>
+  to start a conversation, or /facechat with no argument to browse your catalog and
+  pick a face. The face answers in its own voice on any chat model, or proposes the
+  options it would weigh. Trigger when the user says "chat with a face", "talk to
+  <name>", "ask <name>", or wants a conversation with a compiled face. Also trigger
+  on /facechat.
 allowed-tools:
   - Bash
   - Read
@@ -17,7 +18,7 @@ allowed-tools:
   - WebFetch
 ---
 
-# /facechat: Ask a Face
+# /facechat: Chat with a Face
 
 ## Preamble
 
@@ -32,8 +33,9 @@ echo "EXIT:$?"
 
 If `NOT_INSTALLED` (the auth check then prints `EXIT:127`, command not found): run `npm install -g @faces-sh/cli@latest` and re-run the preamble.
 
-This skill needs the CLI's `faces choices` (version 1.1.0 or later). If `faces choices --help`
-says the command is not found, run `npm install -g @faces-sh/cli@latest`.
+This skill needs the CLI's `faces chat:thread` on the model names `@face:maestro-1/<model>`
+(version 1.2.0 or later). If `faces chat:thread --help` says the command is not found, or a
+command answers that `face@model` is gone, run `npm install -g @faces-sh/cli@latest`.
 
 If `UPDATE_AVAILABLE`: run `npm install -g @faces-sh/cli@latest`. Once auth triage below reaches `EXIT:0`, run `faces catalog:doctor --fix` to migrate local catalog files. It needs a signed-in account, so before sign-in it fails with "Authentication required"; that is not a broken update.
 
@@ -127,62 +129,73 @@ a face or team. Ask the user:
 >
 > Pick a number, or type a name/alias.
 
-## Ask
+## Chat
 
-Chat is retired on Faces: a face does not reply in conversation. Instead it is **asked**: given a
-situation and a question, it proposes the options it would weigh, strongest first, each a short
-name and a sentence in its own terms (`faces choices`). Say so once if the user expected a chat.
+A face is named in one `model`: the face and its maestro, then the chat model that writes the
+reply after a slash: `@ALIAS:maestro-1/MODEL`. A face the user does not own is `@OWNER~ALIAS`.
+Use the face's `default_model` (from `faces face:get ALIAS --json`) unless the user names
+another model; `faces models:list` lists them. Use `maestro-1-flash` in place of `maestro-1` only
+when the user asks for speed: it costs 10 times more on the face's part.
 
-Split what the user wrote into the **situation** (the facts) and the **question** (what to
-decide). If the user gave only a situation, ask with no question: the face proposes the question
-it would ask. If they gave no situation, ask them for one:
-
-> **Asking NAME.** What is the situation, and what do you want to decide?
+Keep the conversation in a thread, so each turn sends what came before:
 
 ```bash
-faces choices ALIAS --state "SITUATION" --question "QUESTION" --json
-faces choices ALIAS --state "SITUATION" --json        # no question: the face proposes one
+faces chat:thread @ALIAS:maestro-1/MODEL -m "MESSAGE" --json     # first turn: keep thread_id
+faces chat:thread --id THREAD_ID -m "MESSAGE" --json              # every turn after
 ```
 
-Show the options as a numbered list, `name` in bold with its description, and say they are the
-face's, strongest first. With no question, show the face's `question` and its `alternatives`,
-and offer to ask it.
+Show the reply (`assistant` in `--json`) as the face's, under its name. If the user gave no
+message, ask:
 
-`--state` takes at most 3,000 tokens of prose. For more, use a state (below).
+> **Chatting with NAME.** What do you want to say?
+
+The face's style is chosen for each message by the server (an email reads as an email, a text
+message as a text message): never pass a style or medium. Start a new thread when the user
+switches faces or models.
+
+### Ask what it would do
+
+When the user wants the face's **options** rather than a reply ("what would X do", "what are my
+options as X sees them"), ask with `faces choices`, which takes the face and its maestro alone:
+
+```bash
+faces choices @ALIAS:maestro-1 --state "SITUATION" --question "QUESTION" --json
+faces choices @ALIAS:maestro-1 --state "SITUATION" --json        # no question: the face proposes one
+```
+
+Split what the user wrote into the **situation** (the facts) and the **question**. Show the
+options as a numbered list, `name` in bold with its description, strongest first. With no
+question, show the face's `question` and its `alternatives`, and offer to ask it. `--state` takes
+at most 3,000 tokens of prose. For more, use a state.
 
 ### Follow-ups: keep a state
 
-For a conversation that goes on, keep the situation on the server as a **state**, so each
-question reads everything established so far:
+When the conversation builds up facts that should hold from turn to turn, keep them on the
+server as a **state**:
 
 ```bash
-faces state:create ALIAS --json                         # once; keep the id
+faces state:create @ALIAS --json                         # once; keep the id
 faces state:add STATE_ID --premise KEY=VALUE --premise-description KEY="what it means"
-faces choices ALIAS --state-id STATE_ID --question "QUESTION" --json
+faces chat:thread --id THREAD_ID -m "MESSAGE" --conversation STATE_ID --json
+faces choices @ALIAS:maestro-1 --state-id STATE_ID --question "QUESTION" --json
 ```
 
-Write each fact the user establishes as a premise, with a status when it matters
-(`--premise-status KEY=assumed`, `verified`, `unresolved`, `invalidated`) and what it rests on
+In a state, a chat turn sends only the new message: the state holds the rest. Write each fact
+the user establishes as a premise, with a status when it matters (`--premise-status
+KEY=assumed`, `verified`, `unresolved`, `invalidated`) and what it rests on
 (`--premise-depends-on KEY=other_key`). When the user says something no longer holds, set it
 `invalidated`: everything resting on it is invalidated too.
 
 Prose sent with `--state` beside `--state-id` is an **addendum for that one call**: the face
 reads it with the state, and it is **never saved**. Anything that should still hold on the next
-question must be written with `faces state:add --premise`. Do not rely on the addendum to carry
-facts forward.
+question must be written with `faces state:add --premise`.
 
 Start a fresh state when switching faces or when the user clearly begins a new topic.
 
-### Model
-
-`--model maestro-1` is the default. `--model maestro-1-flash` answers sooner and costs 10 times
-more when a question is asked; use it only when the user asks for speed.
-
 ### Bringing in another face
 
-To bring another face's view in, ask it the same question (`faces choices OTHER ...`), or get
-its cause (the principal *why* behind its response) with `faces causes OTHER -m "QUESTION"`
-and add it to the situation.
+To bring another face in, chat with it on the same question, or ask a composite:
+`faces chat:chat "(@ALIAS | @OTHER):maestro-1/MODEL" -m "MESSAGE"`.
 
 ## Team
 
@@ -208,15 +221,18 @@ the file.
 The mermaid diagram uses three shapes. Each has one rule:
 
 - `(alias)` **rounded rectangle**: ask the face:
-  `faces choices alias --state "INPUT" --question "QUESTION"` where QUESTION is the user's
-  question and INPUT is the concatenated output from all incoming edges. Format each input
+  `faces chat:chat @alias:maestro-1/MODEL -m "INPUT" --no-stream`, where MODEL is the face's
+  `default_model` (or the one TEAM.md names) and INPUT is the user's message and the concatenated
+  output from all incoming edges. When the node asks for the face's options rather than a reply,
+  use `faces choices @alias:maestro-1 --state "INPUT" --question "QUESTION"`. Format each input
   clearly:
   ```
   [from Query]: <the user's original message>
   [from face-a]: <face-a's options>
   ```
-  A member you do not own is `owner:alias`: `faces choices owner:alias --state "INPUT" ...`.
-  Keep INPUT under 3,000 tokens; summarize earlier rounds if it grows past that.
+  A member you do not own is `@owner~alias`: `faces chat:chat @owner~alias:maestro-1/MODEL ...`.
+  Keep INPUT short; summarize earlier rounds if it grows long (`faces choices` takes at most
+  3,000 tokens of `--state`).
 - `[text]` **sharp rectangle**: you (the orchestrating agent) carry out the
   instruction described in the text. The text IS the instruction.
 - `{text}` **diamond**: you evaluate the condition described in the text
@@ -233,7 +249,7 @@ and ends at the `[Response]` node (what you show the user).
 
 1. Start at `[Query]`: seed it with the user's message.
 2. Follow outgoing edges. For each node you reach:
-   - `(face)`: call `faces choices` with the concatenated inputs.
+   - `(face)`: call `faces chat:chat` (or `faces choices`) with the concatenated inputs.
    - `[instruction]`: carry out the instruction yourself.
    - `{condition}`: evaluate and branch.
 3. If an edge loops back (e.g. round-robin), increment the round counter.
@@ -245,11 +261,11 @@ and ends at the `[Response]` node (what you show the user).
 
 Show each face's contribution with attribution so the user sees who said what:
 
-> **skeptic:** [options]
+> **skeptic:** [reply]
 >
-> **builder:** [options]
+> **builder:** [reply]
 >
-> **strategist:** [options]
+> **strategist:** [reply]
 >
 > **[Tally/Decision/Final node label]:** [final output]
 

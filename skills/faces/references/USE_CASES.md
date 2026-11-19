@@ -1,7 +1,7 @@
 # Example Use Cases
 
 **1. Historical thinkers.** Compile the complete works of a thinker into a face. Ask it the
-questions they never answered, and let its cause steer whichever model answers.
+questions they never answered, on whichever model you chat with.
 
 **2. Customer panel from transcripts.** Upload 20 interview transcripts as threads, one face
 per participant, with `--face-speaker` naming the participant so only their turns are used. Run `face:diff` across the panel to see who is alike before reading a word, then
@@ -25,8 +25,8 @@ unavailable.
 organization's thinking is moving.
 
 **7. Boolean composition.** You have a pragmatist and a visionary. Their union
-(`pragmatist | visionary`) holds both outlooks. Their intersection (`pragmatist & visionary`)
-keeps only the common ground. Their difference (`visionary - pragmatist`) is the visionary
+(`@pragmatist | @visionary`) holds both outlooks. Their intersection (`@pragmatist & @visionary`)
+keeps only the common ground. Their difference (`@visionary - @pragmatist`) is the visionary
 without the practical instinct. Each is a face you can ask, and none needed another
 document compiled.
 
@@ -39,7 +39,7 @@ who already agrees; its furthest is who opposes it most. Ask the furthest for th
 counter-argument.
 
 **10. Your own judgement.** Compile your posts, threads and captions into a face, then
-ask it what you would do: `faces choices me --state "<situation>" --question "<question>"`.
+ask it what you would do: `faces choices @me:maestro-1 --state "<situation>" --question "<question>"`.
 Compiling new material over time keeps it current.
 
 **11. A deliberation pipeline.** Compile an `expert` face from domain literature. Make a
@@ -47,16 +47,15 @@ Compiling new material over time keeps it current.
 pass its answer to `critic`, then pass both to `synthesizer`. Each stage is one face; together
 they are a pipeline built from set algebra.
 
-**12. Debate between faces.** Get one face's cause on the question and hand it to another.
-`faces causes penrose -m 'What resolves the information paradox?'` prints
-Penrose's cause; then `faces choices hawking --state 'Penrose holds: <the cause>.' --question
-'How do you answer him?'`. Alternate for as many rounds as the exchange needs.
+**12. Debate between faces.** Ask one face, and hand its answer to another.
+`faces chat:chat @penrose:maestro-1/gpt-5.4 -m 'What resolves the information paradox?'`, then
+`faces chat:chat @hawking:maestro-1/gpt-5.4 -m 'Penrose holds: <his answer>. How do you answer him?'`.
+Alternate for as many rounds as the exchange needs.
 
-**13. Neutral analysis across faces.** Get each face's cause on the same question, then give
-them to a model with no face. `faces causes marx -m 'What drives history?'`
-and the same for `hayek`, then give both to your own model and ask where they converge. The
-model compares both without taking either side.
+**13. Neutral analysis across faces.** Ask each face the same question with `faces choices`,
+then give the options to a model with no face and ask where they converge. The model compares
+both without taking either side.
 
-**14. Steering your own pipeline.** Call `faces causes alias -m "…"` (the API's
-`POST /v1/causes`) for the cause alone, and put it in front of whatever model or agent you
-already run. You pay only for the cause.
+**14. Steering your own pipeline.** Point an OpenAI- or Anthropic-compatible client at
+`https://api.faces.sh/v1` and name the model as `@alias:maestro-1/<model>`: the face steers every
+reply, and your code does not change.

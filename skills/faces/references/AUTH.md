@@ -17,7 +17,7 @@ faces auth:register \
   --username alice \
   --json
 
-# Connect ($17/month) or Pro ($49/month): monthly allowances for compiling and causes,
+# Connect ($17/month) or Pro ($49/month): monthly allowances for compiling, choices and steering,
 # and Codex-eligible models run on a linked ChatGPT plan
 faces auth:register \
   --email user@example.com \
@@ -109,7 +109,7 @@ faces keys:create --name "other-machine" --no-save
 Restrictions, all optional:
 
 - `--face ALIAS`: only these faces (repeatable). A key limited to faces can ask them (choices,
-  causes and decisions), open states with them, and read them, and nothing else: listing
+  chat and decisions), open states with them, and read them, and nothing else: listing
   faces, compiling and every other command answer `403`
 - `--model NAME`: only use these models (repeatable)
 - `--budget F`: a lifetime spend cap in USD; past it, requests answer `402`
@@ -133,12 +133,13 @@ read it back.
 | plan | price | what it includes |
 |---|---|---|
 | Free | $0 | Everything is paid as it goes from credits; start by adding $5 |
-| Connect | $17/month | Allowances for compiling and causes; Codex-eligible models run on a linked ChatGPT plan |
+| Connect | $17/month | Allowances for compiling, choices and steering; Codex-eligible models run on a linked ChatGPT plan |
 | Pro | $49/month | Larger allowances, and the same ChatGPT route |
 
-Pay-as-you-go rates, on Free and past an allowance: a cause $0.75 per million tokens (the
-tokens it reads plus 1,500), compiling $25 per million source tokens, and any model you name
-at the model's listed price plus 5%. Read the live figures from `GET /v1/rates`. Details in
+Pay-as-you-go rates, on Free and past an allowance: choices $0.42 per million input and $1.00
+per million output tokens; steering chat and decisions $0.42 per million input tokens plus
+$0.00042 a call; compiling $16 per million source tokens; and the downstream model you name at
+its listed price plus 5%. Read the live figures from `GET /v1/rates`. Details in
 [BILLING.md](BILLING.md); the ChatGPT route in [OAUTH.md](OAUTH.md).
 
 On Connect and Pro, a ChatGPT failure or a used-up allowance is refused by default rather than

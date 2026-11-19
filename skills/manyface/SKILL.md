@@ -224,7 +224,7 @@ faces face:list --public --search "<text>" --sort relevance   # best match first
 faces face:list --public --sort usage               # most used first: what others actually reach for
 ```
 
-A published face is asked as `owner:alias`. It can join a team by that same address (`faces group:add GROUP_ID
+A published face is asked as `@owner~alias` (`faces chat:chat @owner~alias:maestro-1/MODEL`). It can join a team as `owner:alias` (`faces group:add GROUP_ID
 --face owner:alias`), but it cannot be edited or compiled, so a role that needs
 its own sources or prompt has to be its own face. `faces face:get owner:alias`
 and `faces face:neighbors owner:alias` work too, so you can read one before
@@ -401,7 +401,7 @@ teams are gates.
 **Notation: three shapes, consistent across all diagrams:**
 - `[text]` **sharp rectangle** = faceless step (agent executes the instruction)
 - `(alias)` **rounded rectangle** = solo face step (calls
-  `faces choices alias --state "..." --question "..."`)
+  `faces chat:chat @alias:maestro-1/MODEL -m "..."`, or `faces choices @alias:maestro-1 --state "..." --question "..."`)
 - `{{team-name}}` **hexagon** = team step (runs the protocol defined in
   `~/.faces/teams/<team-name>/TEAM.md`: the team's own mermaid diagram
   is walked by the orchestrating agent)
@@ -443,7 +443,7 @@ architecture without reading the prose.
 
 <instructions for this step>
 
-Use `faces choices <alias> --state "<situation, at most 3,000 tokens>" --question "<question>"`: the face proposes the options it would weigh, strongest first. To give this face another's view, include that face's cause (`faces causes <other> -m "<question>"`) or its options from an earlier step in the situation.
+Use `faces chat:chat @<alias>:maestro-1/<model> -m "<input>"` for the face's own reply, or `faces choices @<alias>:maestro-1 --state "<situation, at most 3,000 tokens>" --question "<question>"` for the options it would weigh, strongest first. To give this face another's view, include that face's reply or options from an earlier step in the input.
 ```
 
 **For team steps:**
@@ -536,7 +536,7 @@ checklist. Fix any issues before proceeding.
       created during this session
 - [ ] **Every team referenced exists:** either in `~/.faces/teams/` or
       created during this session
-- [ ] **Step instructions use correct CLI:** `faces choices <alias>`, not
+- [ ] **Step instructions use correct CLI:** `faces chat:chat @<alias>:maestro-1/<model>` or `faces choices @<alias>:maestro-1`, not
       made-up commands
 - [ ] **Faceless steps have no face/team assignment**
 - [ ] **No point of view in the SKILL.md itself:** the skill routes, it

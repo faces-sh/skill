@@ -3,7 +3,7 @@
 > Every AI agent sounds the same. Helpful. Direct. Forgettable. **Faceless.**
 
 Faces are **causal models**. Compile one from an author's own texts (essays, emails,
-interviews, YouTube talks); prompt it, and it returns a **cause**: the principal *why* that
+interviews, YouTube talks); prompt it, and it works out a **cause**: the principal *why* that
 would motivate that author's response in the context. The cause steers whichever model answers,
 so your agents keep a consistent, specific point of view however long they run. They become
 *someone* instead of no one.
@@ -12,7 +12,7 @@ so your agents keep a consistent, specific point of view however long they run. 
 system for making faces and putting them to work:
 
 - **`/facemake`**: create a face from scratch. Interview, research, compile.
-- **`/facechat`**: ask any face or team in your catalog what it would do. Pass an alias or browse to pick one.
+- **`/facechat`**: chat with any face or team in your catalog, or ask a face what it would do. Pass an alias or browse to pick one.
 - **`/faceteam`**: compose several faces into a team with a collaboration protocol.
 - **`/manyface`**: turn any agent skill into one where every step that needs judgment is run by the right face.
 - **`/faces`**: the core CLI operations, for direct access to the platform.
@@ -95,7 +95,7 @@ You can register manually at the [faces.sh](https://faces.sh/) website, or via t
 # Free: add $5 of credit to start, then pay as you go (models at the model's listed price plus 5%)
 faces auth:register --email you@example.com --password 'Your-password-1' --username your_username
 
-# Connect ($17/month) or Pro ($49/month): monthly allowances for compiling and causes, and
+# Connect ($17/month) or Pro ($49/month): monthly allowances for compiling, choices and steering, and
 # Codex-eligible models run on your linked ChatGPT plan
 faces auth:register --email you@example.com --password 'Your-password-1' --username your_username --plan connect
 ```
@@ -164,14 +164,9 @@ Claude: [imports Wikipedia bio, Scientific American essay, Electrodynamics paper
 
 ```
 You:    /facechat einstein "I have two competing models and the data fits both. Which do I pursue?"
-Claude: Einstein would weigh, strongest first:
+Claude: [faces chat:thread @einstein:maestro-1/gpt-5.4 -m "..."]
 
-        1. Empirical testing
-           Collect more data to distinguish between the models, as only experiment can reveal nature's choice.
-        2. Theoretical refinement
-           Improve the models' mathematical frameworks, as uncertainty demands deeper conceptual clarity before deciding.
-        3. Pedagogical clarity
-           Simplify the problem by comparing the models' core assumptions, using analogies to guide intuition.
+        einstein: [his reply, in his own voice, on gpt-5.4]
 
 You:    /facechat
 Claude: Your catalog:
@@ -268,10 +263,10 @@ Claude: [reads the skill, decomposes into 5 steps]
 | Skill | What it does |
 |-------|-------------|
 | `/facemake` | **Guided face creation.** Interview → research (real URLs via web search) → sketch FACE.md → iterate with the user → compile → optionally build a style. Quick mode: `/facemake "Person Name"` skips the interview. |
-| `/facechat` | **Ask any face or team.** `/facechat einstein` to ask a face what it would do, `/facechat review-panel` to run a team's protocol, or `/facechat` to browse your catalog and pick. |
+| `/facechat` | **Chat with any face or team.** `/facechat einstein` to chat with a face (or ask what it would do), `/facechat review-panel` to run a team's protocol, or `/facechat` to browse your catalog and pick. |
 | `/faceteam` | **Team composition.** Composes faces into a team with a self-sufficient mermaid protocol diagram. Three shapes: `(face)` rounded rects get called, `[instruction]` sharp rects the agent executes, `{condition}` diamonds the agent branches on. Produces a TEAM.md in `~/.faces/teams/`. |
 | `/manyface` | **Skill orchestrator.** Takes an existing skill (or designs one from scratch), decomposes it into steps, determines which need a solo face vs. a team vs. no face, and outputs a `manyfaced-` skill directory. |
-| `/faces` | **Core CLI.** Direct access to the faces platform: create faces, compile documents, import YouTube videos, build styles, ask a face what it would do, get causes, ask for decisions, keep states on the server, compare faces, compose them with set algebra, benchmark, manage API keys, billing, account preferences, and backup/restore. |
+| `/faces` | **Core CLI.** Direct access to the faces platform: create faces, compile documents, import YouTube videos, build styles, chat with a face on any model, ask a face what it would do, ask for decisions, keep states on the server, compare faces, compose them with set algebra, benchmark, manage API keys, billing, account preferences, and backup/restore. |
 
 ## The hierarchy
 
@@ -297,7 +292,7 @@ A manyfaced skill's SKILL.md is a conductor's score. It says: "In step 1, use th
   backups/                        # timestamped JSON backup snapshots
 ```
 
-Everything under `~/.faces/` is the Faces ecosystem. Catalog and teams compound independently across projects and sessions. Ask any face via `/facechat`.
+Everything under `~/.faces/` is the Faces ecosystem. Catalog and teams compound independently across projects and sessions. Chat with any face via `/facechat`.
 
 ## FACE.md format
 

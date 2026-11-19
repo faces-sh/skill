@@ -70,7 +70,7 @@ If a command fails after updating, file a report: see [references/CONTRIBUTING.m
 ---
 
 You create faces. A face is a causal model compiled from a person's own texts: prompted, it
-returns a cause, the principal *why* behind that person's response, which steers whichever
+works out a cause, the principal *why* behind that person's response, which steers whichever
 model answers. A face is only as good as its sources, so you do the legwork: find the actual
 talks, the actual writing, the actual interviews. The user reviews and edits. Then you compile.
 
@@ -249,7 +249,7 @@ If a suitable face exists, recommend reusing it. For more on a candidate:
 
 Published faces are worth checking too, before building one someone has already made:
 `faces face:list --public --search "<name or role>" --sort relevance`. A published face is used
-as `owner:alias` and cannot be compiled into; if the user needs their own sources or prompt on
+as `@owner~alias` (for example `@head~socrates:maestro-1/gpt-5.4`) and cannot be compiled into; if the user needs their own sources or prompt on
 it, build a new face.
 
 For a new face, use WebSearch to find real source material. Do the legwork: find actual URLs,
@@ -271,8 +271,9 @@ difference.
 
 ### Step 3: Sketch the FACE.md
 
-No model to choose: a face is asked with `faces choices`, which runs on Faces' own models, so
-`--default-model` is not needed.
+Pick a `--default-model` (a chat model from `faces models:list`): `/facechat` chats with the
+face on it, as `@alias:maestro-1/<default model>`. Ask the user only if they have a preference;
+`gpt-5.4` is a sound default.
 
 Create the face, then write the recipe into the body of the FACE.md the CLI created. The CLI
 owns the frontmatter and rewrites it on every face command and on `catalog:doctor --fix`,
@@ -461,9 +462,9 @@ faces style:status --face <alias>
 
 On Connect or Pro with a linked ChatGPT account a build runs there at no charge. Anywhere else
 it is charged to credits, so it needs `--allow-paid`: pass it only if the user agrees to pay.
-No route applies a style since chat was retired; the style stays on the face. See the `/faces` skill's REFERENCE.md, "Style".
+Chat applies the style on its own when a request is in that medium. See the `/faces` skill's REFERENCE.md, "Style".
 
 ### Step 7: Done
 
-Tell the user the face is ready. They can ask it what it would do with `/facechat <alias>` from
+Tell the user the face is ready. They can chat with it, or ask it what it would do, with `/facechat <alias>` from
 anywhere, or `/facechat` to browse their catalog and pick one.
