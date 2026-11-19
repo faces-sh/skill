@@ -2,9 +2,9 @@
 
 Faces are **causal models**. A face distills the essence of a particular author from
 unstructured source texts: essays, blog posts, emails, letters, interviews, talks. When
-prompted, a face returns a **cause**: the principal *why* that would motivate that author's
+prompted, a face works out a **cause**: the principal *why* that would motivate that author's
 response in the given context. Causes steer other AIs, so an agent keeps a consistent, specific
-point of view however long it runs.
+point of view however long it runs. A cause stays on the server: no response returns it.
 
 Causes are upstream of reasons. A reason is what you tell a police officer when they ask why
 you did not stop at a red light; a cause is how you decided what to say.
@@ -14,12 +14,14 @@ you did not stop at a red light; a cause is how you decided what to say.
 | API | Endpoints | Returns |
 |---|---|---|
 | Choices | `/v1/choices` | the options the face would weigh, strongest first, or the question it would ask |
-| Decisions | `/v1/decisions`, `/v1/systemone` | typed `answers`, with a `cause` per question |
-| Causes | `/v1/causes` | the `cause` alone |
+| Chat | `/v1/chat/completions`, `/v1/responses`, `/v1/messages` | the downstream model's reply, steered by the face |
+| Decisions | `/v1/decisions`, `/v1/systemone` | typed `answers` from the decision model, steered by the face |
 
-In the CLI: `faces choices` asks a face what it would do, `faces decide` asks for typed answers
-(`face@decision-model`), and `faces causes alice -m "…"` returns the cause alone. Chat is
-retired: its endpoints answer `410`.
+Every one takes one `model`: our **upstream** model, a face and its maestro (`@alice:maestro-1`),
+and for chat and decisions the **downstream** model after a `/` (`@alice:maestro-1/gpt-5.4`,
+`@alice:maestro-1/jev-latest`). Another account's face is `@owner~alice`. In the CLI:
+`faces choices @alice:maestro-1`, `faces chat:chat @alice:maestro-1/gpt-5.4` and
+`faces decide @alice:maestro-1/jev-latest`.
 
 A choice is open: the face proposes the options. A decision is closed: the decision model picks
 among the options or levels given, and returns typed answers. The two chain: a choice's option
@@ -43,14 +45,14 @@ Faces combine with **boolean set algebra** into composites:
 
 | Operator | Syntax |
 |---|---|
-| Union | `a \| b` |
-| Intersection | `a & b` |
-| Difference | `a - b` |
-| Symmetric difference | `a ^ b` |
+| Union | `@a \| @b` |
+| Intersection | `@a & @b` |
+| Difference | `@a - @b` |
+| Symmetric difference | `@a ^ @b` |
 
-Parentheses group: `(a | b) - c`. A composite can be **persisted** as a named face
+Parentheses group: `(@a | @b) - @c`. A composite can be **persisted** as a named face
 (`face:create --formula "a | b"`) or composed **per request** by putting the formula where a
-face goes (`faces choices "(a | b)" --state "…"`). A formula whose result is empty is refused with `422 empty_composite` ("the
+face goes, with the maestro once after it (`faces choices "(@a | @b):maestro-1" --state "…"`). A formula whose result is empty is refused with `422 empty_composite` ("the
 intersection between these two faces is null"). See
 [REFERENCE.md → Run-time composite faces](REFERENCE.md#run-time-composite-faces).
 
@@ -66,8 +68,8 @@ Every source text has a **medium**: `email`, `text message`, `social post`, `ess
 `other`. A **style build** reads a face's own writing in one medium and installs a style for
 that medium, so the face writes better in it. A face holds a separate style per medium.
 
-A style was applied with `--style <medium>` on the chat commands, which are retired with chat;
-no command applies one now. See
+Chat applies the face's style on its own: the server reads what each request is and serves the
+style for that medium when the face has one. There is nothing to ask for. See
 [REFERENCE.md → Style](REFERENCE.md#style-how-a-face-writes-style).
 
 For example use cases, see [USE_CASES.md](USE_CASES.md).

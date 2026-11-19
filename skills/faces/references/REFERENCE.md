@@ -79,41 +79,46 @@ faces face:tag:remove   <alias>  <tag>
 faces face:tag:all
 faces face:groups       <alias>  --group GROUP_ID  [--group GROUP_ID...]
 
-faces choices          <alias | owner:alias | "(a | b)">  (--state TEXT | --state-file PATH | --state-id ID)  [--question TEXT]
-                        [--model maestro-1|maestro-1-flash]  [--max-choices N]
+faces choices          <@alias:maestro-1 | @owner~alias:maestro-1 | "(@a | @b):maestro-1">
+                        (--state TEXT | --state-file PATH | --state-id ID)  [--question TEXT]  [--max-choices N]
                                                        # what the face would do (POST /v1/choices): its options,
                                                        # strongest first. No --question: the question it would ask.
                                                        # --state is prose, at most 3,000 tokens; longer goes in a state
                                                        # (--state-id). With both, the prose is an addendum for that
                                                        # call only, never saved: persist facts with state:add --premise.
+                                                       # :maestro-1-flash answers sooner, at 10x.
 
-faces causes           <alias | owner:alias | "(a | b)">  (-m MSG... | --file PATH | --state TEXT | --state-file PATH)
-                        [--question TEXT [--type noul|choice|score] [--option NAME[=DESCRIPTION]... | --level DESCRIPTION...] [--id KEY] | --questions-file PATH]
-                        [--conversation ID [--premise K=V ...]]  [--session ID]  [--compaction ID]
-                                                       # the cause alone (POST /v1/causes): no model answers, only
-                                                       # the cause is charged. Questions need --state, one cause each.
+faces chat:chat         <@alias:maestro-1/MODEL>  (-m MSG... | --file PATH)  [--system TEXT]  [--max-tokens N]  [--temperature T]
+                        [--no-stream]  [--responses]  [--conversation ID [--premise K=V ...]]  [--compaction ID]  [--oauth-only]
+                                                       # chat with a face: it steers, MODEL writes the reply. Routed to
+                                                       # chat completions, responses or messages by the catalog.
+faces chat:messages     <@alias:maestro-1/MODEL>  ...  # the same, always /v1/messages
+faces chat:responses    <@alias:maestro-1/MODEL>  ...  # the same, always /v1/responses
+faces chat:thread       [<@alias:maestro-1/MODEL>]  [--id THREAD_ID]  -m MSG  [--conversation ID]  [--list | --show | --delete]
+                                                       # a multi-turn chat kept under ~/.faces/threads
 
-faces state:create      [<alias | owner:alias | "(a | b)">]  [--premise K=V ...]  [--no-causes-visible]
+faces state:create      [<@alias | @owner~alias | "(@a | @b)">]  [--premise K=V ...]  [--no-causes-visible]
 faces state:add         <state_id>  [--premise K=V ...]  [--premise-description K="..."]  [--premise-status K=STATUS]
                         [--premise-depends-on K=a,b]  [-m MSG]
                                                        # prints the status changes and the decisions resting on a value
                                                        # you changed. STATUS: stated|verified|assumed|unresolved|invalidated
 faces state:get         <state_id>
 faces state:items       <state_id>                     # premises with their status, decisions, messages
-faces state:compact     <state_id>  [<face>]
+faces state:compact     <state_id>  [<@face>]
 faces state:close       <state_id>  [--yes]
                                                        # conversation:* and session:* are older names for state:*
 
-faces models:list       [--kind choices|decision|cause|compile|chat|image|transcription[,...] | --kind all]  [--provider LAB]  [--chatgpt]
+faces models:list       [--kind upstream|chat|decision|compile|image|transcription[,...] | --kind all]  [--provider LAB]  [--chatgpt]
                                                        # the model catalog, once each, with kind, endpoint and price.
+                                                       # upstream: the maestros, with their steering prices.
                                                        # CODEX marks Codex-eligible models. No sign-in needed.
 
-faces decide (<alias> | --baseline)  (--state TEXT | --state-file PATH)
+faces decide            <@alias:maestro-1/DECISION_MODEL>  (--state TEXT | --state-file PATH)
                       [--question TEXT [--type noul|choice|score] [--option NAME[=DESCRIPTION]... | --level DESCRIPTION...] [--id KEY] | --questions-file PATH]
-                      [--model jev-latest|clef|clef-flash|gpt-6-luna]  [--format systemone|openai]  [--show-cause]
+                      [--format systemone|openai]
                       [--conversation ID [--depends-on a,b] [--premise K=V ...]]  [--session ID]  [--compaction ID]  [--no-retry]
-                                                       # typed answers, as this face, or with no face for --baseline.
-                                                       # A face with no questions gives its cause alone. See Decisions.
+                                                       # typed answers, as this face. DECISION_MODEL: jev-latest, clef,
+                                                       # clef-flash or gpt-6-luna. See Decisions.
 
 faces benchmark:start   <alias>  [--model MODEL]  [--reference-model MODEL]  [--rounds N]  [--seed N]  [--max-spend USD]  [--dry-run]  [--wait]
 faces benchmark:get     <run_id>  [--wait]
@@ -188,8 +193,8 @@ faces style:upload      <alias>  <file>  [--type jsonl|email_jsonl|thread_json] 
                                                        # load a corpus of the person's OWN writing. Stores only: nothing
                                                        # compiled, nothing billed. ONE MEDIUM PER FILE.
 faces style:make        <alias>  (--all | --source ID[:MEDIUM]...)  [--medium MEDIUM]  [--model MODEL]  [--allow-paid]  [--no-compile]  [--timeout N]  [--no-wait]
-                                                       # build a style per medium and install it. No route applies a
-                                                       # style since chat was retired. Charged to credits unless it runs
+                                                       # build a style per medium and install it. Chat applies it when a
+                                                       # request is in that medium. Charged to credits unless it runs
                                                        # on a linked ChatGPT account (Connect or Pro): --allow-paid.
 faces style:status      [JOB_ID]  [--face ALIAS]  [--limit N]  [--wait]  [--timeout N]
                                                        # one build, or a face's recent builds (how to find a lost job id)
@@ -253,8 +258,7 @@ faces config:clear  [--yes]                            # never run this: see SKI
 
 ## Fidelity (`fidelity:*`)
 
-Fidelity runs compared chat answers, and are retired with chat: starting or advancing one is a
-`410`. Runs already made can still be read and saved:
+Fidelity runs compared chat answers; starting or advancing one is retired, a `410`. Runs already made can still be read and saved:
 
 ```bash
 faces fidelity:get <run>                          # progress, every turn, the score
@@ -264,32 +268,30 @@ faces fidelity:save-thread <run>                  # save a finished run as a thr
 ## Default model (`--default-model`)
 
 `--default-model` on `face:create` and `face:edit` stores the face's preferred model for
-clients to read. No command applies it since chat was retired.
+clients to read: `/facechat` chats on it, as `@alias:maestro-1/<default model>`. The API never
+fills it in: `model` always names the downstream model.
 
 ## The face's cause
 
-A face's **cause** is the principal *why* behind its response in this context.
-**`faces causes <face> -m "…"`** asks for it alone: the Causes API, `POST /v1/causes`, charged
-at the cause rate. Use it to bring a face's view into your own prompt or pipeline. It also takes
-a situation (`--state`) in place of messages, with optional questions for one cause per
-question (up to 10), in the same shape as `faces decide`. A cause takes about 10 seconds.
-`faces causes` with `-m` reads every message sent, at most 30,000 tokens per request. A face
-with nothing compiled has no cause: `409`.
+A face's **cause** is the principal *why* behind its response in this context. It steers the
+downstream model on chat and decisions, and stays on the server: no response carries it, and
+`POST /v1/causes` is removed (`422`). To bring one face's view into another, ask it with `faces
+choices` and put its options in the other's situation, or ask a composite.
 
 ## States and compaction
 
 A **state** is the situation your agent builds, kept on the server: premises (named facts, each
 with a status and what it depends on), the decisions faces made, and your messages. Over HTTP it
 is `/v1/states` (`/v1/conversations` is a deprecated alias). Hand it to a face with
-`faces choices --state-id`; join `decide` and `causes` to it with `--conversation`.
+`faces choices --state-id`; join `chat:*` and `decide` to it with `--conversation`.
 
 ```bash
-faces state:create alice
+faces state:create @alice
 faces state:add fs_... --premise rent_rises='"12% in March"' --premise-status rent_rises=assumed \
   --premise-description rent_rises="the landlord says rent goes up 12% in March"
 faces state:add fs_... --premise can_afford=false --premise-depends-on can_afford=rent_rises \
   --premise-description can_afford="the shop can carry the higher rent"
-faces decide alice --conversation fs_... --depends-on can_afford --state "Decide about the lease." \
+faces decide @alice:maestro-1/jev-latest --conversation fs_... --depends-on can_afford --state "Decide about the lease." \
   --question "Move the shop to a cheaper street before March?"
 # ...
 # decision id (answer): dec_...
@@ -298,7 +300,7 @@ faces state:add fs_... --premise rent_rises='"no rise this year"' --premise-stat
 #   premise rent_rises: assumed -> invalidated
 #   premise can_afford: stated -> invalidated (because rent_rises)
 #   decision dec_...: decided -> invalidated (because can_afford)
-faces choices alice --state-id fs_... --question "What should the shop do?"
+faces choices @alice:maestro-1 --state-id fs_... --question "What should the shop do?"
 ```
 
 **Premises.** `--premise key=value` (the key is 1 to 64 letters, digits, `_` or `-`; the value
@@ -323,9 +325,9 @@ carries `decision_ids` (printed as `decision id (<question>): dec_...`) to name 
 decisions that rested on the old value, with `via` naming a decision that carried it. Nothing is
 decided again for you.
 
-**Compaction.** `faces state:compact fs_... [face]` writes one face's position over the state as
-a compaction id (`fcmp_...`); `--compaction fcmp_...` on `causes` or `decide` reads it. Billed at
-the cause rate.
+**Compaction.** `faces state:compact fs_... [@face]` keeps one face's position over the state on
+the server under a compaction id (`fcmp_...`); `--compaction fcmp_...` on `chat:*` or `decide`
+reads it. The response carries only the id. Billed on the tokens it reads and writes.
 
 Opening, reading and adding to a state are free. A state expires 30 days after its last use. A
 `404` on a state means unknown, expired, closed, another account's, or opened with another face.
@@ -333,11 +335,11 @@ Opening, reading and adding to a state are free. A state expires 30 days after i
 ## The `me` face
 
 Every account has one face aliased **`me`**: the account's own face, made with the account.
-Another account's is `<username>:me`, readable only if that account publishes it or shares it.
+Another account's is `<username>:me` (in a model, `@<username>~me`), readable only if that account publishes it or shares it.
 
 - **It starts with the account's name only:** no description, attributes or default model, not
-  published, and nothing compiled. Until a source is compiled into it, its cause is a `409`, and
-  an answer needs a model named (`me@gpt-5.4-mini`).
+  published, and nothing compiled. Until a source is compiled into it, asking it is a `409`.
+  Chat names the model: `@me:maestro-1/gpt-5.4-mini`.
 - **Edit it like any face:** `faces face:edit me --name ... --description ... --attr key=value`.
 - **It cannot be made or removed:** creating another face aliased `me` is a `400`, and
   `face:delete me` is a `409`. Publishing, sharing, locking, tags and groups work as on any
@@ -361,17 +363,18 @@ Besides your own faces, every account can use a curated set of **system faces** 
 
 `--from-users` and `--not-from-users` are repeatable or comma-separated, and cannot be combined.
 In `--json` a published face carries `published: true` and `owned_by`; build the handle
-`owned_by:alias` from those rather than assuming `head`, since the set and its owner can change.
+`@owned_by~alias` from those rather than assuming `head`, since the set and its owner can change.
 
-**Asking one** uses `owner:alias`:
+**Asking one** uses `@owner~alias` in the model:
 
 ```bash
-faces choices head:socrates --state "A chain bakery opened across the street." --question "What now?"
-faces choices logician --state "..."      # your own faces stay bare
+faces choices @head~socrates:maestro-1 --state "A chain bakery opened across the street." --question "What now?"
+faces chat:chat @head~socrates:maestro-1/gpt-5.4 -m "What is virtue?"
+faces choices @logician:maestro-1 --state "..."      # your own faces need no owner
 ```
 
-The same handle works on `causes`, `decide`, `face:get`, `face:neighbors`, `face:avatar:*` and
-`group:add`. The **caller** pays at normal rates; the owner is never charged.
+The same works on `decide` and `state:create`. `face:get`, `face:neighbors`, `face:avatar:*` and
+`group:add` take the face as `owner:alias`, with no `@`. The **caller** pays at normal rates; the owner is never charged.
 
 ## Run-time composite faces
 
@@ -379,14 +382,15 @@ Ask a **composite composed on the fly**, without persisting it, by putting a for
 the face goes:
 
 ```bash
-faces choices "(socrates | nietzsche)" --state "..." --question "What is virtue?"
-faces causes "(socrates | nietzsche)" -m "What is virtue?"
-faces decide "(alice | bob)" --state "..." --question "..."
+faces choices "(@socrates | @nietzsche):maestro-1" --state "..." --question "What is virtue?"
+faces chat:chat "(@socrates | @nietzsche):maestro-1/gpt-5.4" -m "What is virtue?"
+faces decide "(@alice | @bob):maestro-1/jev-latest" --state "..." --question "..."
 ```
 
 Operators: `|` union, `&` intersection, `-` difference, `^` symmetric difference. Parentheses
-group and nest: `((a | b) & c)`. Works on `faces choices`, `faces causes` and `faces decide`,
-priced like one face. A saved composite (`face:create --formula`) works the same way everywhere.
+group and nest: `((@a | @b) & @c)`. The maestro follows the whole formula, once. Works on
+`faces choices`, `faces chat:*` and `faces decide`, priced like one face. Quote it: the shell
+reads `|` and `&`. A saved composite (`face:create --formula`) works the same way everywhere.
 
 Rules:
 
@@ -395,11 +399,12 @@ Rules:
   Branch on `error_code` and show `message` as it is. A composite with nothing compiled is a
   `409`: each face in it needs a source.
 - **Operands are concrete faces**, not composites (no nesting: `422`). A bare alias is one of
-  your own; `owner:alias` works in a run-time formula for a face you can read
-  (`(alice | head:socrates)`). A face you cannot read is a `404`. A persisted formula
+  your own; `@owner~alias` works in a run-time formula for a face you can read
+  (`(@alice | @head~socrates)`). A face you cannot read is a `404`. A persisted formula
   takes only your own faces.
-- **Difference needs spaces:** `a - b`. A dash between letters (`news-bot`) is part of an
-  alias.
+- **Difference:** a `-` right before `@` or `(` is the difference, with or without spaces
+  (`@a-@b`, `@a - @b`). A dash inside a name (`@news-bot`) is part of the alias; no alias starts
+  or ends with one.
 
 Billing is unchanged: the caller pays. A scoped API key may use a composite only if it may use
 *every* operand; otherwise it is a `403` naming the one it may not.
@@ -446,10 +451,10 @@ unless the user asks.**
 
 `faces choices` gives you the options a face would weigh. `faces decide` gives you what it would **decide**:
 describe a situation, ask typed questions about it, and get back numbers, as this face. The
-face's cause for each question guides a **decision model**'s answer.
+face steers a **decision model**, named after the `/`: `@alice:maestro-1/jev-latest`.
 
 ```bash
-faces decide alice --state "A colleague asks you to put your name on a grant proposal you have not read, due in an hour. They say it is a formality." \
+faces decide @alice:maestro-1/jev-latest --state "A colleague asks you to put your name on a grant proposal you have not read, due in an hour. They say it is a formality." \
   --question "Does the speaker sign the proposal?" \
   --option yes="signs it as asked" --option no="declines to sign" --option later="asks for time to read it first"
 # answer: no, confidence 0.90
@@ -475,64 +480,60 @@ For several questions, write them to a file in the API's shape and pass `--quest
  "firm":  {"type": "score", "instructions": "How firm is the reply?", "criteria": ["yields", "hedges", "firm"]}}
 ```
 
-At most **10 questions with a face**, 32 with `--baseline`. A noul's `criteria` are optional,
+At most **10 questions** per request. A noul's `criteria` are optional,
 `{"true": "...", "false": "..."}`.
 
 - **`--state`** is the situation, written the way the face would hear it. `--state-file` reads
   it from disk; a `.json` file is sent as the JSON it holds (an object or an array).
 - **Criteria do the work.** `no` alone is ambiguous; `declines to sign` is not. Keep options
   mutually exclusive.
-- **`--model`** picks the decision model: `jev-latest` (the default), `clef` or `clef-flash`
-  (`faces models:list --kind decision`). On the wire this is `face@decision-model`. Call them
-  "decision models" to the user. The face can be a saved composite or a formula
-  (`"(a | b)"`), priced like one face.
-- **`gpt-6-luna`** is OpenAI's Decisions model: pass `--format openai` with it (it isn't served
-  in System One). Up to 400 questions alone, 10 with a face. It's paid from credits only.
+- **The decision model** goes after the `/`: `jev-latest`, `clef` or `clef-flash`
+  (`faces models:list --kind decision`). Call them "decision models" to the user. The face can
+  be a saved composite or a formula (`"(@a | @b):maestro-1/jev-latest"`), priced like one face.
+  A decision model with no face is not served.
+- **`gpt-6-luna`** is OpenAI's Decisions model: the CLI sends it in OpenAI's format on its own
+  (it isn't served in System One). It's paid from credits only.
 - **Images** aren't supported in decisions or with a face (`422`).
-- **`--baseline`** asks the decision model alone, with no face: the number to compare a face's
-  answer against, in about a second, costing only the decision model.
 - **`--format`** picks the request shape: `systemone` (the default; TypeSafe's Jev System One,
   `POST /v1/systemone`) or `openai` (OpenAI's Decisions format, `POST /v1/decisions`). The
   answers are the same; `--json` returns that format's own shape.
-- **The cause** comes back whenever a face is named: `causes` holds one per question, and
-  `cause` is the first question's. `--show-cause` prints them to stderr. Name a face and ask
-  **no questions** for its cause alone.
 - **`--conversation` / `--compaction`** attach the decision to a state: it reads the state so
   far and is stored with the premises in force. `--depends-on` says what it rests on; see
   States and compaction. (`--session` is the old name for `--conversation`.)
 - **History:** outside a state, decisions keep none between requests. To chain them, put
-  the earlier situations and what was decided into the state; do not replay earlier causes into
-  it.
+  the earlier situations and what was decided into the state.
 
-With `--json` (systemone) the result is `{"model", "answers", "usage", "cause", "causes"}`,
-`answers` keyed by question id (`--id` renames the default `answer`), and `model` with the
-decision model's versioned id (`alice@jev-1.13.0`).
+With `--json` (systemone) the result is `{"model", "answers", "answered_by", "usage"}`,
+`answers` keyed by question id (`--id` renames the default `answer`), `model` as sent
+(`@alice:maestro-1/jev-latest`), and `answered_by` the decision model's versioned id
+(`jev-1.14.0`).
 
-**Timing.** A face's answer takes about 10 to 20 seconds; a baseline about one. Allow at least
+**Timing.** A face's answer takes about 10 to 20 seconds. Allow at least
 300 seconds. Past about 40 seconds the server answers `200` with `X-Faces-Held: 1`, sends spaces
 to keep the connection open, then the JSON. A held call that fails still answers `200`, with
 `{"detail": ..., "error": {"code": ..., "status": ...}}` and no `answers`; the CLI reports the real status and code.
 A request still working after 300 seconds is stopped with a `504`; retry. A `503` means the
-decision model failed: retry, or try another `--model`. Do not add a retry loop.
+decision model failed: retry, or name another decision model. Do not add a retry loop.
 
-**Cost.** The face's cause counts once per question (the situation plus that question, plus
-1,500), against a Connect or Pro allowance or paid on Free. The decision model is paid from
+**Cost.** The steering costs $0.42 per million input tokens it processes plus $0.00042 a call
+(10 times that on `maestro-1-flash`), with no output charge, against a Connect or Pro allowance
+or paid on Free. The decision model is paid from
 credits at the model's listed price plus 5% **on every plan**, so a decision needs credit even on
 Connect and Pro: with none it is a `402` before any work. Nothing is charged for a request
 refused before work starts (`400`, `402`, `403`, `409`, `422`, `429`).
 
 | Code | Meaning | What to do |
 |---|---|---|
-| `400` | The model is not a face, a decision model or `face@decision-model` | Fix the request |
+| `400` | The decision model after the `/` is not one we serve | Name one from `faces models:list --kind decision` |
 | `402` | No credit for the decision model | `faces billing:topup` |
 | `404` | No such face, or not yours to use | Check the alias |
 | `409` | The face has nothing compiled | Compile a source into it |
-| `422` | Wrong shape, the other format's body, or over a size limit | Read the message |
+| `422` | Not `@face:maestro-1/<decision model>`, the wrong shape, the other format's body, or over a size limit | Read the message: it shows the form to use |
 | `422 empty_composite` | The formula's result is empty | Show `message`; use a formula whose result is not empty |
-| `429` naming an allowance | The cause allowance is used up and `api_fallback` is off | Wait for the reset, or turn on `api_fallback` |
+| `429` naming an allowance | The plan's allowance is used up and `api_fallback` is off | Wait for the reset, or turn on `api_fallback` |
 | `429 Rate limit` | The account's per-minute limit | The CLI waits `Retry-After` once; then wait the seconds named |
 | `504` | The face did not finish within 300 seconds | Retry |
-| `503` | The cause failed, or the decision model is unavailable | Retry, or another `--model` |
+| `503` | The steering failed, or the decision model is unavailable | Retry, or another decision model |
 
 ## Benchmark (`benchmark:*`)
 
@@ -566,15 +567,14 @@ faces benchmark:list --face alice
 ## Face description (`--description`)
 
 A plain-text bio, up to 1,500 characters, shown in listings. It is metadata: it does not change
-the face's causes. Synced to the local FACE.md.
+what the face does. Synced to the local FACE.md.
 
 ```bash
 faces face:create --name "Ada" --alias ada --description "Theoretical physicist and first-principles thinker"
 faces face:edit ada --description "Updated bio"
 ```
 
-`catalog:doctor --fix` pulls descriptions from the server; `catalog:doctor --generate` writes
-missing ones with a model and saves them to the server.
+`catalog:doctor --fix` pulls descriptions from the server.
 
 ## Face specialty (`--specialty`)
 
@@ -588,9 +588,8 @@ faces face:edit ada --specialty ""                   # clears it
 
 ## Per-face system prompt (`profile_addendum`)
 
-A face can store a system prompt fragment. It was sent to the model on every chat request with
-that face; chat is retired, and choices, causes and decisions do not use it. It is still stored
-and returned to the owner.
+A face can store a system prompt fragment. It is sent to the model on every chat request with
+that face; choices and decisions do not use it. It is returned to the owner.
 
 ```bash
 faces face:create --name "Support Bot" --alias support-bot --default-model claude-sonnet-4-6 \
@@ -727,8 +726,9 @@ faces style:versions alice
 
 ### Using a built style
 
-A style was applied by `--style` on the chat commands, which are retired with chat. No command
-applies a style now; builds still run and the styles stay on the face.
+Chat applies a built style on its own: the server reads what each request is (an email, an
+essay, a text message, or none of these) and serves the face's style for that medium when it has
+one. Nothing is sent to ask for one; `style`, `medium` and `kind` on a request are refused (`422`).
 
 - Every face carries `styles`: the media it has a built style for. `face:get` prints them,
   `face:list --has-style` filters to faces with any, and in `--json` it is a list:
@@ -1121,7 +1121,7 @@ to do when there is one.
 
 Refusals that can come from many routes:
 
-- **`429` naming an allowance.** A Connect or Pro allowance (causes over 5 hours, the week or
+- **`429` naming an allowance.** A Connect or Pro allowance (choices and steering over 5 hours, the week or
   the month, or compiling over the month) is used up and `api_fallback` is off. The message
   says which, and when it resets: show it as it is. Wait, or turn on `api_fallback` to pay from
   credits.

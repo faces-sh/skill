@@ -4,8 +4,8 @@ On the **Connect** and **Pro** plans, a user can link a ChatGPT account. A **Cod
 model (`codex_eligible: true` in `GET /v1/models`) then runs on the linked ChatGPT plan at
 `/v1/responses`: the model's part of the request costs no credits and carries no 5% markup.
 
-**The cause is billed as usual**, from the plan's allowance and then from credits. Linking
-ChatGPT changes who pays for the model, not for the face.
+**The steering is billed as usual**, from the plan's allowance and then from credits. Linking
+ChatGPT changes who pays for the downstream model, not for the face.
 
 Which models are Codex-eligible changes, so read `codex_eligible` from the catalog
 (`faces models:list --chatgpt`, or `GET /v1/models`) rather than keeping a list.
@@ -68,8 +68,8 @@ authorization for Codex' at chatgpt.com, Settings, Security first."*
 this way: tell the human.
 
 Once linked, nothing else is needed: interviews and style builds run on the ChatGPT plan where
-the model allows it. Choices, causes and decisions are not affected: they use the plan's
-allowance, then credits.
+the model allows it. Choices and the steering of chat and decisions are not affected: they use the plan's allowance,
+then credits.
 
 ## If `auth:connect` errors
 

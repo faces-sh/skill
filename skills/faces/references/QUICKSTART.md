@@ -1,6 +1,6 @@
 # Quickstart
 
-From zero to a face's first cause and answer. Follow these steps in order.
+From zero to a face's first answer. Follow these steps in order.
 
 **Claude Code only:** right after the faces-skill bundle is installed, the slash commands
 (`/facemake`, `/facechat`, and so on) are not available until the session restarts. You cannot
@@ -48,7 +48,7 @@ faces auth:whoami
 >
 > A) **Free**: add $5 of credit to start, then everything is paid as it goes. No monthly fee.
 >    Good for trying it out.
-> B) **Connect ($17/month)**: monthly allowances for compiling and for causes, and the
+> B) **Connect ($17/month)**: monthly allowances for compiling, choices and steering, and the
 >    Codex-eligible models run on your linked ChatGPT plan. Other models are paid as they go.
 > C) **Pro ($49/month)**: Connect with larger allowances.
 
@@ -181,16 +181,19 @@ Always poll with `--status-only`, which leaves the text out.
 ## 6. Ask it
 
 ```bash
-faces choices alice --state "A startup in Berlin offers me a design lead role at a lower salary." \
+faces choices @alice:maestro-1 --state "A startup in Berlin offers me a design lead role at a lower salary." \
   --question "Should I take the offer?"                                       # the options it would weigh
-faces choices alice --state "A startup in Berlin offers me a design lead role at a lower salary."   # the question it would ask
-faces causes alice -m "What matters most to you?"                            # the cause alone
+faces choices @alice:maestro-1 --state "A startup in Berlin offers me a design lead role at a lower salary."   # the question it would ask
+faces chat:chat @alice:maestro-1/gpt-5.4 -m "What matters most to you?"     # a reply in its voice
 ```
+
+The face goes in one `model`: `@alice:maestro-1` is the face and its maestro; on chat, the model
+that writes the reply follows the `/`.
 
 `faces choices` returns the options the face would weigh, strongest first. Leave `--question`
 out and it proposes the question it would ask. For a situation over 3,000 tokens, or one your
 agent keeps building, put it in a state (`faces state:create`, `faces state:add`) and pass
-`--state-id`. `faces causes` returns the face's cause alone.
+`--state-id`. `faces chat:chat` answers as the face on any chat model in `faces models:list`.
 
 ## 7. Check it worked
 
@@ -209,10 +212,10 @@ The face is ready once a source reads `synced`.
 - **More faces:** repeat steps 3 to 5.
 - **Compare faces:** `faces face:diff --face alice --face bob`
 - **Compose faces:** `faces face:create --name "Alice and Bob" --alias alice-and-bob --formula "alice | bob"`
-- **Ask what a face would decide:** `faces decide alice --state "..." --question "..."` (see
+- **Ask what a face would decide:** `faces decide @alice:maestro-1/jev-latest --state "..." --question "..."` (see
   [REFERENCE.md → Decisions](REFERENCE.md#decisions-decide))
-- **Compare faces on one question:** run `faces choices <alias> --state '…' --question '…'` for
-  each, or get each one's cause with `faces causes <alias> -m '<question>'`.
+- **Compare faces on one question:** run `faces choices @<alias>:maestro-1 --state '…' --question '…'`
+  for each, or chat with each on the same model.
 - **Connect ChatGPT** (Connect or Pro): `faces auth:connect openai`. See [OAUTH.md](OAUTH.md).
 - **An API key:** `faces keys:create --name "my-key"` for programmatic access. See
   [AUTH.md](AUTH.md).

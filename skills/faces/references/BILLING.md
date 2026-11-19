@@ -11,23 +11,25 @@ output.
 | `connect` | $17/month | The allowances below; with ChatGPT linked, interviews and style builds run on the ChatGPT plan |
 | `pro` | $49/month | Larger allowances, and the same ChatGPT link |
 
-A subscription is an **allowance**, not a fee per request. It covers compiling, choices and a
-face's **cause** (`/v1/causes` and decisions), up to the limits below. A **decision model** is
-never part of it: on every plan it is paid at the model's listed price plus 5%, so `faces
-decide` always needs credit.
+A subscription is an **allowance**, not a fee per request. It covers compiling, choices and the
+**steering** of chat and decisions (the face's part of `@alice:maestro-1/<model>`), up to the
+limits below. The **downstream model** (the chat model or decision model after the `/`) is never
+part of it: on every plan it is paid at the model's listed price plus 5%, so `faces decide` and
+`faces chat:*` always need credit (a Codex-eligible chat model on a linked ChatGPT plan aside;
+see [OAUTH.md](OAUTH.md)).
 
 | allowance | Connect | Pro |
 |---|---|---|
 | compile, per month | 500k source tokens | 1.5M source tokens |
-| choices and causes, per month | 25M tokens | 75M tokens |
-| choices and causes, per week | 6.25M | 18.75M |
-| choices and causes, per 5 hours (rolling) | 1.6M | 4.8M |
+| choices and steering, per month | 25M tokens | 75M tokens |
+| choices and steering, per week | 6.25M | 18.75M |
+| choices and steering, per 5 hours (rolling) | 1.6M | 4.8M |
 
 - **Compile** counts a source's tokens **each time** it is compiled; a recompile counts again.
 - **Choices** counts the call's `usage.input_tokens`, the input tokens it processed; on
   `maestro-1-flash` with a question, 10 times that.
-- **A cause** counts the tokens it read plus 1,500. `/v1/causes` with messages reads every
-  message sent, at most 30,000 tokens per request.
+- **Steering** (chat and decisions) counts the input tokens it processed plus 1,000 a call
+  (the $0.00042 fee, counted as the tokens it buys); on `maestro-1-flash`, 10 times that.
 - The month is the subscription's 30-day window, weeks are 7-day blocks of it, and the 5-hour
   window rolls.
 
@@ -45,15 +47,16 @@ decide` always needs credit.
 |---|---|
 | Choices, `maestro-1` | $0.42 per million input tokens, $1.00 per million output tokens, as `usage` reports them |
 | Choices, `maestro-1-flash` with a question | $4.20 and $10.00 per million; without a question, as `maestro-1` |
-| A cause (causes, decisions) | $0.75 per million tokens: the tokens it read plus 1,500 |
+| Steering chat and decisions, `maestro-1` | $0.42 per million input tokens plus $0.00042 a call; no output charge |
+| Steering, `maestro-1-flash` | $4.20 per million input tokens plus $0.0042 a call |
 | Compile | $16 per million source tokens |
 | Rush compile (`--rush`) | $21 per million source tokens |
-| A decision model | the model's listed price plus 5% |
+| A downstream model (chat or decision) | the model's listed price plus 5% |
 
 The live figures are public at `GET /v1/rates` (no key needed), and per model in the model
-catalog (`faces models:list`, or `GET /v1/models`): the choices models are `maestro-1` and
-`maestro-1-flash` (`faces models:list --kind choices`), the cause model `faces-causes-latest`
-and the compile model `faces-compile-latest`. Quote them from there, not from memory.
+catalog (`faces models:list`, or `GET /v1/models`): the maestros are `maestro-1` and
+`maestro-1-flash` (`faces models:list --kind upstream`, with their steering prices) and the
+compile model is `faces-compile-latest`. Quote them from there, not from memory.
 
 ## Check the plan and its allowances
 
@@ -66,15 +69,15 @@ Shows the plan, the renewal date and, on a paid plan, a meter of each allowance:
 
 ```
 Connect allowances (tokens):
-  causes, rolling 5 hours  3018 of 1.6M (0%)  rolls
-  causes, this week        3018 of 6.25M (0%)  resets 2026-10-26 09:44 UTC
-  causes, this month       32.5k of 25M (0%)  resets 2026-10-28 09:44 UTC
-  compile, this month      4072 of 500k (0%)  resets 2026-10-28 09:44 UTC
+  choices and steering, rolling 5 hours  3018 of 1.6M (0%)  rolls
+  choices and steering, this week        3018 of 6.25M (0%)  resets 2026-10-26 09:44 UTC
+  choices and steering, this month       32.5k of 25M (0%)  resets 2026-10-28 09:44 UTC
+  compile, this month                    4072 of 500k (0%)  resets 2026-10-28 09:44 UTC
 ```
 
 In `--json`, `allowances` holds `cause_5h`, `cause_week`, `cause_month` and `compile_month`,
-each `{limit, used, remaining, resets_at}`; the `cause_*` ones are the choices and causes
-allowance. It is `null` on Free. `cause_5h` rolls, so its
+each `{limit, used, remaining, resets_at}`; the `cause_*` ones are the choices and steering
+allowance (the key names are older than the product's). It is `null` on Free. `cause_5h` rolls, so its
 `resets_at` is `null`. `rates` carries the pay-as-you-go rates.
 
 ## Subscribe
@@ -127,7 +130,7 @@ repeat it only if the user confirms, with `--allow-duplicate` (`allow_duplicate:
 API). `--yes` does not imply it.
 
 Credits apply at once. A `402` anywhere means there is no credit for that request, including
-`faces decide` on Connect and Pro, whose decision model is always paid. Top up and retry.
+`faces decide` and `faces chat:*` on Connect and Pro, whose downstream model is always paid. Top up and retry.
 
 ## Cards
 
@@ -228,8 +231,7 @@ faces billing:usage --json
 faces billing:usage --group-by model --from 2026-03-01 --to 2026-03-31
 ```
 
-Group by `api_key`, `model`, `llm` or `date`. A face's causes appear as `faces-causes-latest`
-and compiling as `faces-compile-latest`. COST is what you were charged.
+Group by `api_key`, `model`, `llm` or `date`. Compiling appears as `faces-compile-latest`. COST is what you were charged.
 
 ## What to do on
 
