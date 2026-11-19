@@ -258,12 +258,24 @@ faces config:clear  [--yes]                            # never run this: see SKI
 
 ## Fidelity (`fidelity:*`)
 
-Fidelity runs compared chat answers; starting or advancing one is retired, a `410`. Runs already made can still be read and saved:
+A fidelity run is ten blind turns on a face the user owns. Each turn shows two answers, `a`
+and `b`, in random order: one from the face, one from a competitor model. The user picks the one
+that sounds more like the person, then accepts it or corrects it. The score, out of 10, is saved
+on the face (owner only) and replaced by the next run.
 
 ```bash
+faces fidelity:run alice                          # interactive: ten turns, then the score
+faces fidelity:start alice [--competitor <model>]  # or step by step
+faces fidelity:turn <run> -m "How was the trip?"
+faces fidelity:pick <run> a                       # accept answer a
+faces fidelity:pick <run> b --correction "Fine, thanks. Long drive."
 faces fidelity:get <run>                          # progress, every turn, the score
-faces fidelity:save-thread <run>                  # save a finished run as a thread you can compile
+faces fidelity:save-thread <run>                  # save it as a thread you can compile
 ```
+
+Scoring per turn: the face picked and accepted 1.0; picked and corrected 0.9, 0.7 or 0.5 by how
+much the correction changed; the competitor picked 0. The user drives every turn: never pick or
+correct on their behalf.
 
 ## Default model (`--default-model`)
 
