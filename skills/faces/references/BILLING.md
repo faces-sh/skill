@@ -75,9 +75,9 @@ Connect allowances (tokens):
   compile, this month                    4072 of 500k (0%)  resets 2026-10-28 09:44 UTC
 ```
 
-In `--json`, `allowances` holds `cause_5h`, `cause_week`, `cause_month` and `compile_month`,
-each `{limit, used, remaining, resets_at}`; the `cause_*` ones are the choices and steering
-allowance (the key names are older than the product's). It is `null` on Free. `cause_5h` rolls, so its
+In `--json`, `allowances` holds `upstream_5h`, `upstream_week`, `upstream_month` and
+`compile_month`, each `{limit, used, remaining, resets_at}`; the `upstream_*` ones are the choices
+and steering allowance. It is `null` on Free. `upstream_5h` rolls, so its
 `resets_at` is `null`. `rates` carries the pay-as-you-go rates.
 
 ## Subscribe
@@ -231,7 +231,8 @@ faces billing:usage --json
 faces billing:usage --group-by model --from 2026-03-01 --to 2026-03-31
 ```
 
-Group by `api_key`, `model`, `llm` or `date`. Compiling appears as `faces-compile-latest`. COST is what you were charged.
+Group by `api_key`, `model`, `llm` or `date`. Our own models' work (steering, choices and
+compacting) appears as `upstream`, and compiling as `faces-compile-latest`. COST is what you were charged.
 
 ## What to do on
 
