@@ -79,7 +79,7 @@ faces face:tag:remove   <alias>  <tag>
 faces face:tag:all
 faces face:groups       <alias>  --group GROUP_ID  [--group GROUP_ID...]
 
-faces choices          <alias | owner:alias | "(a | b)">  (--state TEXT | --state-file PATH | --state-id ID)  [--question TEXT]
+faces choices          <alias | owner:alias | "(a | b)">  (--state TEXT | --state-file PATH | --state-id ID [--depends-on a,b])  [--question TEXT]
                         [--model maestro-1|maestro-1-flash]  [--max-choices N]
                                                        # what the face would do (POST /v1/choices): its options,
                                                        # strongest first. No --question: the question it would ask.
@@ -317,7 +317,10 @@ invalidated it. A write's response lists `status_changes`: `[{kind, key | id, fr
 because}]`.
 
 **Decisions in a state.** `decide --depends-on a,b` says what a decision rests on; it is shown
-those and invalidated with them. Without it, it rests on every premise in force. The response
+those, and the premises each directly depends on, in full, and invalidated with them.
+`choices --state-id fs_... --depends-on a,b` names what options rest on the same way (premise
+keys, decision ids, `opt_` and `cho_` ids); the options added to the state record it. A
+premise's `role` never changes what a face is shown: name what a call needs. Without it, it rests on every premise in force. The response
 carries `decision_ids` (printed as `decision id (<question>): dec_...`) to name in a later
 `--depends-on`. When a premise's value changes, `decisions_made_under_old_values` lists the
 decisions that rested on the old value, with `via` naming a decision that carried it. Nothing is
