@@ -461,7 +461,9 @@ faces state:compact fs_...                                # prints a compaction 
 ```
 
 **Premises.** A premise is `--premise key=value` with `--premise-description` the first time a
-key is used. `--premise-status key=status` is `stated` (default), `verified`, `assumed`,
+key is used. A key is plain text of 1 to 120 characters on one line, so name it in words:
+`--premise 'everyone can eat=yes'`. A key that holds `=` goes in double quotes
+(`--premise '"a=b"=yes'`), and so does one that holds a comma in a list (`'"x, y",b'`). `--premise-status key=status` is `stated` (default), `verified`, `assumed`,
 `unresolved` or `invalidated`; `--premise-depends-on key=a,b` names the premise keys and
 decision ids it rests on (`key=` clears it). **Only `invalidated` spreads:** an invalidated
 premise invalidates everything that depends on it, directly or through others, and setting it
