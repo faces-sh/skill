@@ -468,7 +468,10 @@ premise invalidates everything that depends on it, directly or through others, a
 back restores them. `state:add` prints every status that changed (`status_changes` over HTTP).
 What you read back is the effective `status`; `asserted_status` is what the agent set, shown
 when they differ, and `because` names what invalidated it. Decide with `--depends-on` to say
-what a decision rests on; `decide` prints its decision id for later `--depends-on`. When a
+what a decision rests on; `decide` prints its decision id for later `--depends-on`.
+`faces choices --state-id fs_... --depends-on a,b` does the same for options. A face is always
+shown what a call names in `--depends-on`, and the premises those directly depend on, in full;
+a premise's `role` never changes what it is shown, so name the goal and facts a call needs. When a
 value changes, `decisions_made_under_old_values` lists the decisions that rested on the old one.
 Nothing is decided again for you: revisit the ones that matter.
 

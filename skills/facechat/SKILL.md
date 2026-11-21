@@ -170,6 +170,8 @@ With `--state-id` and a question, the options are added to the state: the JSON g
 `id` (`opt_...`) and the list a `choices_item` (`cho_...`). When the user picks an option, write
 it as a premise that rests on it (`--premise-depends-on goal=opt_...`), so a later decision
 resting on that premise is shown why the face proposed it. An option never invalidates anything.
+Add `--depends-on KEY,KEY` to `faces choices` to name the premises the question is about: the
+face is shown them, and what they directly rest on, in full.
 
 Prose sent with `--state` beside `--state-id` is an **addendum for that one call**: the face
 reads it with the state, and it is **never saved**. Anything that should still hold on the next
