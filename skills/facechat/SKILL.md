@@ -163,7 +163,9 @@ faces choices ALIAS --state-id STATE_ID --question "QUESTION" --json
 
 Write each fact the user establishes as a premise, with a status when it matters
 (`--premise-status KEY=assumed`, `verified`, `unresolved`, `invalidated`) and what it rests on
-(`--premise-depends-on KEY=other_key`). When the user says something no longer holds, set it
+(`--premise-depends-on KEY=other_key`). Mark what the user wants as the goal
+(`--premise-role KEY=wanted`) and say who set each premise (`--premise-origin KEY=human` for
+what the user said, `agent` for what you worked out). When the user says something no longer holds, set it
 `invalidated`: everything resting on it is invalidated too.
 
 Prose sent with `--state` beside `--state-id` is an **addendum for that one call**: the face

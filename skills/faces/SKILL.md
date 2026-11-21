@@ -463,7 +463,11 @@ faces state:compact fs_...                                # prints a compaction 
 **Premises.** A premise is `--premise key=value` with `--premise-description` the first time a
 key is used. `--premise-status key=status` is `stated` (default), `verified`, `assumed`,
 `unresolved` or `invalidated`; `--premise-depends-on key=a,b` names the premise keys and
-decision ids it rests on (`key=` clears it). **Only `invalidated` spreads:** an invalidated
+decision ids it rests on (`key=` clears it). `--premise-role key=wanted` marks the goal, the
+outcome the state is working toward; `--premise-origin key=origin` says who set it (`human`,
+`agent`, `tool` or `web`): label the user's goals and rules `human` and your own findings
+`agent`. For both, `key=` clears it and a newer value without the flag keeps it. **Only
+`invalidated` spreads:** an invalidated
 premise invalidates everything that depends on it, directly or through others, and setting it
 back restores them. `state:add` prints every status that changed (`status_changes` over HTTP).
 What you read back is the effective `status`; `asserted_status` is what the agent set, shown
