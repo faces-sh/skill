@@ -95,7 +95,7 @@ faces causes           <alias | owner:alias | "(a | b)">  (-m MSG... | --file PA
 
 faces state:create      [<alias | owner:alias | "(a | b)">]  [--premise K=V ...]  [--no-causes-visible]
 faces state:add         <state_id>  [--premise K=V ...]  [--premise-description K="..."]  [--premise-status K=STATUS]
-                        [--premise-depends-on K=a,b]  [-m MSG]
+                        [--premise-depends-on K=a,b]  [--premise-role K=wanted]  [--premise-origin K=ORIGIN]  [-m MSG]
                                                        # prints the status changes and the decisions resting on a value
                                                        # you changed. STATUS: stated|verified|assumed|unresolved|invalidated
 faces state:get         <state_id>
@@ -306,7 +306,12 @@ is JSON when it is JSON, else text), with `--premise-description` the first time
 `--premise-status key=status`: `stated` (default), `verified`, `assumed`, `unresolved`,
 `invalidated`. `--premise-depends-on key=a,b`: premise keys and decision ids already in the
 state or set in the same request, at most 200; `key=` clears it, and a newer value without it
-keeps the earlier one. A premise cannot depend on itself.
+keeps the earlier one. A premise cannot depend on itself. `--premise-role key=wanted`: the
+premise is a goal, the outcome the state is working toward. `--premise-origin key=origin`: who
+set it, `human`, `agent`, `tool` or `web`. Over HTTP they are the premise's `role` and `origin`;
+for both, `key=` (`null` over HTTP) clears it, a newer value without it keeps the earlier one,
+and any other value is a 422. They are returned with each premise and do not change what a
+face is shown.
 
 **Status.** Each premise has the status the agent set; each decision is `decided`. Read back,
 `status` is the **effective** one: `invalidated` when its own is, or when anything it depends on
